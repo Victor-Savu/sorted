@@ -1,4 +1,4 @@
-module Help
+module Sort
 
 import Data.Vect
 import Data.Nat
@@ -32,8 +32,6 @@ x = [0, 1, 2, 3] # (ListIsSorted 0 LTEZero (ListIsSorted 1 (LTESucc LTEZero) (Li
 
 y : Prop (Vect 3 Nat) (Sorted {rel = LTE} @{_})
 y = [4, 5, 6] # (ListIsSorted 4 (LTESucc (LTESucc (LTESucc (LTESucc LTEZero)))) (ListIsSorted 5 (LTESucc (LTESucc (LTESucc (LTESucc (LTESucc LTEZero))))) (SingletonIsSorted 6)))
-
--- We need to prove that any natural number can be written as either 2*n or 2*n+1
 
 data Parity : Nat -> Type where
    Even : {n : _} -> Parity (n + n)
@@ -80,7 +78,7 @@ split : Vect n a -> Pair (Vect (smallHalf n) a) (Vect (largeHalf n) a)
 split [] = ([], [])
 split (x :: Nil) = ([], [x])
 split (x::y::tail) =
-    let (xs, ys) = Help.split tail in
+    let (xs, ys) = Sort.split tail in
         ( replace {p = \k => Vect k a} (sym (smallHalfGrowsEvery2 (veclen tail))) (x::xs)
         , replace {p = \k => Vect k a} (sym (largeHalfGrowsEvery2 (veclen tail))) (y::ys))
 
@@ -116,7 +114,28 @@ merge ((x::xs) # px) ((y::ys) # py) =
             in
                 ?help1 -- ((y::ysz) # (ListIsSorted y vrel ?pyz))
 
--- mergeSort : (lo: StrongLinearOrder a rel) -> List a -> Prop (List a) (Sorted @{lo} rel)
--- mergeSort lo [] = ?mergeSort_rhs_0
--- mergeSort lo (x :: []) = ?mergeSort_rhs_2
--- mergeSort lo (x :: (y :: xs)) = ?mergeSort_rhs_3
+mergeSort : (lo: StrongLinearOrder a rel) => Vect m a -> Prop (Vect m a) (Sorted @{lo})
+mergeSort [] = [] # NilIsSorted
+mergeSort [x] = [x] # SingletonIsSorted x
+mergeSort v @ (_::_::xs) =
+    let
+        (l, r) = Sort.split v
+        l' = mergeSort @{lo} (assert_smaller v l)
+        r' = mergeSort @{lo} (assert_smaller v r)
+        res = merge @{lo} l' r'
+    in
+        replace {p = \m => Prop (Vect m a) (Sorted @{lo})} (smallAndLargeMakeWhole _) res
+
+-- n > smallHalf n
+-- n > largelHalf n
+--
+-- 0 0 0
+-- 1 0 1
+-- 2 1 1
+-- 3 1 2
+-- 4 2 2
+-- 5 2 3
+-- 6 3 3
+-- 7 3 4
+-- 8 4 4
+-- 9 4 5
