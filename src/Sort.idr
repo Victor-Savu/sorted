@@ -10,27 +10,30 @@ import Control.Order
 public export
 interface (PartialOrder ty rel, StronglyConnex ty rel) => StrongLinearOrder ty rel where
 
+namespace Prop
+    public export
+    data Prop: (a: Type) -> (a -> Type) -> Type where
+        (#): (f: a) -> (0 prf: p f) -> Prop a p
+
+(#) : (a: Type) -> (a-> Type) -> Type
+(#) a f = Prop a f
+
 data Sorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (Vect n a) -> Type where
     NilIsSorted: Sorted @{lo} Nil
     SingletonIsSorted : (0 x: a) -> Sorted @{lo} [x]
     ListIsSorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (0 x: a) -> (0 _: rel x y) -> (0 _: Sorted @{lo} (y::ys)) -> Sorted @{lo} (x::y::ys)
 
-
-data Prop: (a: Type) -> (a -> Type) -> Type where
-    (#): (f: a) -> (0 prf: p f) -> Prop a p
-
-subject : Prop a p -> a
+subject : a # p -> a
 subject (f # prf) = f
-
 
 0 sortedTail : (0 lo: StrongLinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
 sortedTail (SingletonIsSorted x) = NilIsSorted
 sortedTail (ListIsSorted x z w) = w
 
-x : Prop (Vect 4 Nat) (Sorted {rel = LTE} @{_})
+x : (Vect 4 Nat) # (Sorted {rel = LTE} @{_})
 x = [0, 1, 2, 3] # (ListIsSorted 0 LTEZero (ListIsSorted 1 (LTESucc LTEZero) (ListIsSorted 2 (LTESucc (LTESucc LTEZero)) (SingletonIsSorted 3))))
 
-y : Prop (Vect 3 Nat) (Sorted {rel = LTE} @{_})
+y : (Vect 3 Nat) # (Sorted {rel = LTE} @{_})
 y = [4, 5, 6] # (ListIsSorted 4 (LTESucc (LTESucc (LTESucc (LTESucc LTEZero)))) (ListIsSorted 5 (LTESucc (LTESucc (LTESucc (LTESucc (LTESucc LTEZero))))) (SingletonIsSorted 6)))
 
 data Parity : Nat -> Type where
@@ -56,10 +59,10 @@ largeHalf n with (parity n)
     largeHalf (j + j) | Even = j
     largeHalf (S (j + j)) | Odd = S j
 
-smallAndLargeMakeWhole : (n: Nat) -> (smallHalf n + largeHalf n = n)
-smallAndLargeMakeWhole n with (parity n)
-    smallAndLargeMakeWhole (j + j) | Even = Refl
-    smallAndLargeMakeWhole (S (j + j)) | Odd = sym (plusSuccRightSucc j j)
+smallAndLargeHalfMakeWhole : (n: Nat) -> (smallHalf n + largeHalf n = n)
+smallAndLargeHalfMakeWhole n with (parity n)
+    smallAndLargeHalfMakeWhole (j + j) | Even = Refl
+    smallAndLargeHalfMakeWhole (S (j + j)) | Odd = sym (plusSuccRightSucc j j)
 
 smallHalfGrowsEvery2 : (n: Nat) -> (smallHalf (S (S n)) = S (smallHalf n))
 smallHalfGrowsEvery2 n with (parity n)
@@ -74,7 +77,7 @@ largeHalfGrowsEvery2 n with (parity n)
 0 veclen : (_: Vect n a) -> Nat
 veclen _ = n
 
-split : Vect n a -> Pair (Vect (smallHalf n) a) (Vect (largeHalf n) a)
+split : Vect n a -> ((Vect (smallHalf n) a), (Vect (largeHalf n) a))
 split [] = ([], [])
 split (x :: Nil) = ([], [x])
 split (x::y::tail) =
@@ -82,39 +85,33 @@ split (x::y::tail) =
         ( replace {p = \k => Vect k a} (sym (smallHalfGrowsEvery2 (veclen tail))) (x::xs)
         , replace {p = \k => Vect k a} (sym (largeHalfGrowsEvery2 (veclen tail))) (y::ys))
 
-sucIsEqual: (n: Nat) -> (S n = S n)
-sucIsEqual n = Refl
+sucIsEqual' : {m, n: Nat} -> n=m -> S n = S m
+sucIsEqual' Refl = Refl
 
 plusZeroIsSame: (m: Nat) -> (m+0 = m)
 plusZeroIsSame 0 = Refl
-plusZeroIsSame (S k) = rewrite plusZeroIsSame k in (sucIsEqual k)
+plusZeroIsSame (S k) = rewrite plusZeroIsSame k in (sucIsEqual' Refl)
 
-pairwise : {1 n: Nat} -> (1 _: Vect (n+n) a) -> Vect n (a, a)
-pairwise {n = 0} Nil = Nil
-pairwise {n = S k} (x::xs) =
-    let
-        prf = sym (plusSuccRightSucc k k)
-        y::ys : Vect (S (k+k)) a = replace {p = \swe => Vect swe a} prf xs
-    in
-        (x, y)::(pairwise ys)
-
-merge: (lo: StrongLinearOrder a rel) => (Prop (Vect m a) (Sorted @{lo})) -> (Prop (Vect n a) (Sorted @{lo})) -> (Prop (Vect (m+n) a) (Sorted @{lo}))
+merge: (lo: StrongLinearOrder a rel) => ((Vect m a) # (Sorted @{lo})) -> ((Vect n a) # (Sorted @{lo})) -> ((Vect (m+n) a) # (Sorted @{lo}))
 merge ([] # _)  y =  y
-merge x ([] # _) = replace {p = \m => Prop (Vect m a) (Sorted @{lo})} (sym (plusZeroIsSame _)) x
+merge x ([] # _) = replace {p = \m => (Vect m a) # (Sorted @{lo})} (sym (plusZeroIsSame _)) x
 merge ((x::xs) # px) ((y::ys) # py) =
     case order @{_} x y of
         Left vrel =>
             let
                 (xsz # pxz) = merge @{_} (xs # (sortedTail px)) (y::ys # py)
+                0 srtd: Sorted @{lo} (x:: xsz) = ?merge_0
             in
-                ?help -- (x :: xsz) # (ListIsSorted x ?xSmallest ?tail)
+                (x :: xsz) # srtd
         Right vrel =>
             let
                 (ysz # pxz) = merge @{_} (x::xs # px) (ys # (sortedTail py))
+                res = replace {p = \swe => Vect swe a} (sucIsEqual' (plusSuccRightSucc _ _)) (y::ysz)
+                0 srtd: Sorted @{lo} res = ?merge_1
             in
-                ?help1 -- ((y::ysz) # (ListIsSorted y vrel ?pyz))
+                res # srtd
 
-mergeSort : (lo: StrongLinearOrder a rel) => Vect m a -> Prop (Vect m a) (Sorted @{lo})
+mergeSort : (lo: StrongLinearOrder a rel) => Vect m a -> (Vect m a) # (Sorted @{lo})
 mergeSort [] = [] # NilIsSorted
 mergeSort [x] = [x] # SingletonIsSorted x
 mergeSort v @ (_::_::xs) =
@@ -124,7 +121,7 @@ mergeSort v @ (_::_::xs) =
         r' = mergeSort @{lo} (assert_smaller v r)
         res = merge @{lo} l' r'
     in
-        replace {p = \m => Prop (Vect m a) (Sorted @{lo})} (smallAndLargeMakeWhole _) res
+        replace {p = \m => (Vect m a) # (Sorted @{lo})} (smallAndLargeHalfMakeWhole _) res
 
 -- n > smallHalf n
 -- n > largelHalf n
