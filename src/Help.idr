@@ -10,27 +10,27 @@ import Control.Order
 public export
 interface (PartialOrder ty rel, StronglyConnex ty rel) => StrongLinearOrder ty rel where
 
-data Sorted: (0 lo: StrongLinearOrder a rel) => (0 rel: a -> a -> Type) -> (0 _: Vect n a) -> Type where
-    NilIsSorted: Sorted @{lo} rel Nil
-    SingletonIsSorted : (0 x: a) -> Sorted @{lo} rel [x]
-    ListIsSorted: (0 x: a) -> (0 _: rel x y) -> (0 _: Sorted @{lo} rel (y::ys)) -> Sorted @{lo} rel (x::y::ys)
+data Sorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (Vect n a) -> Type where
+    NilIsSorted: Sorted @{lo} Nil
+    SingletonIsSorted : (0 x: a) -> Sorted @{lo} [x]
+    ListIsSorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (0 x: a) -> (0 _: rel x y) -> (0 _: Sorted @{lo} (y::ys)) -> Sorted @{lo} (x::y::ys)
 
 
-data Prop: (a: Type) -> (p : (0 _:a) -> Type) -> Type where
-    (#): {a: Type} -> {0 p : (0 _:a) -> Type} -> (f: a) -> (0 prf: p f) -> Prop a p
+data Prop: (a: Type) -> (a -> Type) -> Type where
+    (#): (f: a) -> (0 prf: p f) -> Prop a p
 
 subject : Prop a p -> a
 subject (f # prf) = f
 
 
-0 sortedTail : (0 lo: StrongLinearOrder a rel) => Sorted @{lo} rel (x::xs) -> Sorted @{lo} rel xs
+0 sortedTail : (0 lo: StrongLinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
 sortedTail (SingletonIsSorted x) = NilIsSorted
 sortedTail (ListIsSorted x z w) = w
 
-x : Prop (Vect 4 Nat) (Sorted @{_} LTE)
+x : Prop (Vect 4 Nat) (Sorted {rel = LTE} @{_})
 x = [0, 1, 2, 3] # (ListIsSorted 0 LTEZero (ListIsSorted 1 (LTESucc LTEZero) (ListIsSorted 2 (LTESucc (LTESucc LTEZero)) (SingletonIsSorted 3))))
 
-y : Prop (Vect 3 Nat) (Sorted @{_} LTE)
+y : Prop (Vect 3 Nat) (Sorted {rel = LTE} @{_})
 y = [4, 5, 6] # (ListIsSorted 4 (LTESucc (LTESucc (LTESucc (LTESucc LTEZero)))) (ListIsSorted 5 (LTESucc (LTESucc (LTESucc (LTESucc (LTESucc LTEZero))))) (SingletonIsSorted 6)))
 
 -- We need to prove that any natural number can be written as either 2*n or 2*n+1
@@ -100,24 +100,19 @@ pairwise {n = S k} (x::xs) =
     in
         (x, y)::(pairwise ys)
 
-merge: {0 m: Nat} -> {0 n: Nat} -> (lo: StrongLinearOrder a rel) -> (Prop (Vect m a) (Sorted @{lo} rel)) -> (Prop (Vect n a) (Sorted @{lo} rel)) -> (Prop (Vect (m+n) a) (Sorted @{lo} rel))
-merge {m} _ x ([] # _) =
-    let
-        0 theEquality = sym (plusZeroIsSame m)
-        qqq : (Prop (Vect (m+0) a) (Sorted @{_} rel)) = replace {p = \m => Prop (Vect m a) (Sorted @{_} rel)} theEquality x
-    in
-        ?help -- replace {p = \k => Prop (Vect k a) (Sorted @{_} _)} theEquality (x # px)
-merge _ ([] # _) y = y
-merge lo ((x::xs) # px) ((y::ys) # py) =
+merge: (lo: StrongLinearOrder a rel) => (Prop (Vect m a) (Sorted @{lo})) -> (Prop (Vect n a) (Sorted @{lo})) -> (Prop (Vect (m+n) a) (Sorted @{lo}))
+merge ([] # _)  y =  y
+merge x ([] # _) = replace {p = \m => Prop (Vect m a) (Sorted @{lo})} (sym (plusZeroIsSame _)) x
+merge ((x::xs) # px) ((y::ys) # py) =
     case order @{_} x y of
         Left vrel =>
             let
-                (xsz # pxz) = merge lo (xs # (sortedTail px)) (y::ys # py)
+                (xsz # pxz) = merge @{_} (xs # (sortedTail px)) (y::ys # py)
             in
-                (x::xsz # (ListIsSorted x ?xSmallest pxz))
+                ?help -- (x :: xsz) # (ListIsSorted x ?xSmallest ?tail)
         Right vrel =>
             let
-                (ysz # pxz) = merge lo (x::xs # px) (ys # (sortedTail py))
+                (ysz # pxz) = merge @{_} (x::xs # px) (ys # (sortedTail py))
             in
                 ?help1 -- ((y::ysz) # (ListIsSorted y vrel ?pyz))
 
@@ -125,4 +120,3 @@ merge lo ((x::xs) # px) ((y::ys) # py) =
 -- mergeSort lo [] = ?mergeSort_rhs_0
 -- mergeSort lo (x :: []) = ?mergeSort_rhs_2
 -- mergeSort lo (x :: (y :: xs)) = ?mergeSort_rhs_3
-        
