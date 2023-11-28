@@ -18,23 +18,23 @@ namespace Prop
 (#) : (a: Type) -> (a-> Type) -> Type
 (#) a f = Prop a f
 
-data Sorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (Vect n a) -> Type where
+data Sorted: (0 lo: StrongLinearOrder a rel) => (Vect n a) -> Type where
     NilIsSorted: Sorted @{lo} Nil
-    SingletonIsSorted : (0 x: a) -> Sorted @{lo} [x]
-    ListIsSorted: {0 rel: a -> a -> Type} -> (0 lo: StrongLinearOrder a rel) => (0 x: a) -> (0 _: rel x y) -> (0 _: Sorted @{lo} (y::ys)) -> Sorted @{lo} (x::y::ys)
+    SingletonIsSorted : Sorted @{lo} [x]
+    SeveralAreSorted: (StrongLinearOrder a rel) => (0 _: rel x y) -> (0 _: Sorted @{lo} (y::ys)) -> Sorted @{lo} (x::y::ys)
 
 subject : a # p -> a
 subject (f # prf) = f
 
 0 sortedTail : (0 lo: StrongLinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
-sortedTail (SingletonIsSorted x) = NilIsSorted
-sortedTail (ListIsSorted x z w) = w
+sortedTail SingletonIsSorted = NilIsSorted
+sortedTail (SeveralAreSorted z w) = w
 
 x : (Vect 4 Nat) # (Sorted {rel = LTE} @{_})
-x = [0, 1, 2, 3] # (ListIsSorted 0 LTEZero (ListIsSorted 1 (LTESucc LTEZero) (ListIsSorted 2 (LTESucc (LTESucc LTEZero)) (SingletonIsSorted 3))))
+x = [0, 1, 2, 3] # (SeveralAreSorted LTEZero (SeveralAreSorted (LTESucc LTEZero) (SeveralAreSorted (LTESucc (LTESucc LTEZero)) (SingletonIsSorted))))
 
 y : (Vect 3 Nat) # (Sorted {rel = LTE} @{_})
-y = [4, 5, 6] # (ListIsSorted 4 (LTESucc (LTESucc (LTESucc (LTESucc LTEZero)))) (ListIsSorted 5 (LTESucc (LTESucc (LTESucc (LTESucc (LTESucc LTEZero))))) (SingletonIsSorted 6)))
+y = [4, 5, 6] # (SeveralAreSorted (LTESucc (LTESucc (LTESucc (LTESucc LTEZero)))) (SeveralAreSorted (LTESucc (LTESucc (LTESucc (LTESucc (LTESucc LTEZero))))) (SingletonIsSorted)))
 
 data Parity : Nat -> Type where
    Even : {n : _} -> Parity (n + n)
@@ -113,7 +113,7 @@ merge ((x::xs) # px) ((y::ys) # py) =
 
 mergeSort : (lo: StrongLinearOrder a rel) => Vect m a -> (Vect m a) # (Sorted @{lo})
 mergeSort [] = [] # NilIsSorted
-mergeSort [x] = [x] # SingletonIsSorted x
+mergeSort [x] = [x] # SingletonIsSorted
 mergeSort v @ (_::_::xs) =
     let
         (l, r) = Sort.split v
