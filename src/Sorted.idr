@@ -1,12 +1,13 @@
 module Sorted
 
-import Data.Vect
-import Data.Nat
-import Data.Nat.Views
-import Data.Linear.Notation
+import Control.Order
+import Control.WellFounded
 import Data.Linear.LMaybe
 import Data.Linear.LNat
-import Control.Order
+import Data.Linear.Notation
+import Data.Nat
+import Data.Nat.Views
+import Data.Vect
 import Decidable.Equality
 
 %default total
@@ -101,11 +102,11 @@ public export
 mergeSort : (DecEq a) => (lo: LinearOrder a rel) => Vect m a -> (Vect m a) # (Sorted @{lo})
 mergeSort [] = [] # NilIsSorted
 mergeSort [x] = [x] # SingletonIsSorted
-mergeSort v =
+mergeSort {m = S (S n)} (x::y::tail) =
     let
-        (l # r) = Sorted.split v
-        l' = mergeSort (assert_smaller v l)
-        r' = mergeSort (assert_smaller v r)
-        (res # _) = merge l' r'
+        (l # r) = Sorted.split tail
+        l' = mergeSort (assert_smaller (x::y::tail) (x::l))
+        r' = mergeSort (assert_smaller (x::y::tail) (y::r))
+        (res # _) = merge  l' r'
     in
-        rewrite (sym $ smallAndLargeHalfMakeWhole m) in res
+        rewrite sym $ smallAndLargeHalfMakeWhole n in rewrite plusSuccRightSucc (smallHalf n) (largeHalf n) in res
