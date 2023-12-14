@@ -16,7 +16,7 @@ authors = "Victor-Nicolae Savu"
 depends = linear
 
 -- modules to install
-modules = Sorted
+modules = Sorted, Sorted.Vect, Sorted.Prop
 
 -- main file (i.e. file to load at REPL)
 -- main =

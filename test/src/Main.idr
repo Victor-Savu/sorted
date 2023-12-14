@@ -1,6 +1,7 @@
 module Main
 
-import Sorted
+import Sorted.Vect
+import Sorted.Prop
 import Data.Vect
 import Data.Nat
 import Decidable.Equality
