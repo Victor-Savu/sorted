@@ -48,7 +48,7 @@ public export
 
 public export
 subject : a # p -> a
-subject (f # prf) = f
+subject (f # _) = f
 
 namespace LProp
     public export
@@ -64,3 +64,7 @@ public export
 public export
 lsubject : a ## p -> a
 lsubject (f ## prf) = f
+
+public export
+(&&) : (a->Type) ->(a->Type) -> a -> Type
+(&&) p q x = (p x, q x)
