@@ -17,17 +17,6 @@ import Sorted.Prop
 %default total
 %search_timeout 100
 
-public export
-data Sorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => List a -> Type where
-    NilIsSorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} Nil
-    SingletonIsSorted : {0 a: Type} -> {x: a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} [x]
-    SeveralAreSorted: {0 a: Type} -> {x, y: a} -> {ys: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => rel x y -> Sorted @{lo} (y::ys) -> Sorted @{lo} (x::y::ys)
-
-public export
-sortedTail : {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
-sortedTail SingletonIsSorted = NilIsSorted
-sortedTail (SeveralAreSorted z w) = w
-
 ||| A proof that some element occurs in a list n number of times.
 public export
 data Occurs : {0 a: Type} -> a -> Nat -> List a -> Type where
@@ -65,6 +54,8 @@ countOccurrences x (y :: xs) with (countOccurrences x xs)
     countOccurrences x (y :: xs) | (f ** prf) | (Yes z) = (S f ** rewrite sym z in Here prf)
     countOccurrences x (y :: xs) | (f ** prf) | (No contra) = (f ** There prf contra)
 
+-- PermutationOf (~@~)
+
 infixr 4 ~@~
 
 (~@~) : {a: Type} -> Rel (List a)
@@ -77,37 +68,6 @@ public export
 public export
 [uninhabitedIsPermutationOfNilCons] {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> DecEq a => Uninhabited ([] ~@~ x::xs) where
     uninhabited isPermutationOfNilCons = absurdity $ isPermutationOfNilCons Nowhere (Here $ let (0 ** xInXsPrf) = countOccurrences x xs in xInXsPrf)
-
-public export
-[reflexiveIsPermutationOf] {0 a: Type} -> Reflexive (List a) (~@~) where
-    reflexive Nowhere Nowhere = Refl
-    reflexive (There y f) (Here z) = void $ f Refl
-    reflexive (There y f) (There z g) = reflexive @{reflexiveIsPermutationOf} y z
-    reflexive (Here _) Nowhere impossible
-    reflexive (Here pm) (Here pn) = cong S $ reflexive @{reflexiveIsPermutationOf} pm pn
-    reflexive (Here _) (There _ f) = void $ f Refl
-
-public export
-[transitiveIsPermutationOf] {0 a: Type} -> DecEq a => Transitive (List a) (~@~) where
-    transitive {x=original} {y=permutation} {z=anotherPermutation} isPermutationOP isPermutationPA occursInOriginal occursInAnother =
-      let
-        (_ ** occursInPermutation) = countOccurrences anElement permutation
-      in transitive (isPermutationOP occursInOriginal occursInPermutation) (isPermutationPA occursInPermutation occursInAnother)
-
-public export
-[symmetricIsPermutationOf] {0 a: Type} -> Symmetric (List a) (~@~) where
-    symmetric isPermutation occurrsInPermutation occurrsInOriginal= sym $ isPermutation occurrsInOriginal occurrsInPermutation
-
-SingletonPermutationIsIdentity : {0 a: Type} -> {x, y: a} -> DecEq a => [x] ~@~ [y] -> [x] = [y]
-SingletonPermutationIsIdentity isPermutationOfXY with (decEq x y)
-  SingletonPermutationIsIdentity isPermutationOfXY | (Yes prf) = cong (\e => [e]) prf
-  SingletonPermutationIsIdentity isPermutationOfXY | (No contra) with (isPermutationOfXY (Here Nowhere) (There Nowhere contra))
-    SingletonPermutationIsIdentity isPermutationOfXY | (No contra) | _ impossible
-
-PermutationOfCons : {0 a: Type} -> {x: a} -> {0 xs, ys: List a} -> DecEq a => x::xs ~@~ x::ys ->  xs ~@~ ys
-PermutationOfCons f occursInOriginal occursInPermutation with (decEq anElement x)
-  PermutationOfCons f occursInOriginal occursInPermutation | (Yes anElementEqX) = cong pred $ f (Here $ SameOccurrent occursInOriginal $ sym anElementEqX) (Here $ SameOccurrent occursInPermutation $ sym anElementEqX)
-  PermutationOfCons f occursInOriginal occursInPermutation | (No anElementNEqX) = f (There occursInOriginal anElementNEqX) (There occursInPermutation anElementNEqX)
 
 [uninhabitedIsPermutationOfConsConsXsConsNil] {0 a: Type} -> {x, x', y: a} -> {xs: List a} -> DecEq a => Uninhabited (x::x'::xs ~@~ [y]) where
   uninhabited ipo with (decEq x x')
@@ -148,6 +108,64 @@ PermutationOfCons f occursInOriginal occursInPermutation with (decEq anElement x
             x'NeqX : (x' = x -> Void) = \prf => let symprf = sym prf in xNEqX' symprf
             succEqZero = ipo (There (Here x'InXsPrf) x'NeqX) (There Nowhere x'NEqY)
           in uninhabited succEqZero
+
+public export
+[reflexiveIsPermutationOf] {0 a: Type} -> Reflexive (List a) (~@~) where
+    reflexive Nowhere Nowhere = Refl
+    reflexive (There y f) (Here z) = void $ f Refl
+    reflexive (There y f) (There z g) = reflexive @{reflexiveIsPermutationOf} y z
+    reflexive (Here _) Nowhere impossible
+    reflexive (Here pm) (Here pn) = cong S $ reflexive @{reflexiveIsPermutationOf} pm pn
+    reflexive (Here _) (There _ f) = void $ f Refl
+
+public export
+[transitiveIsPermutationOf] {0 a: Type} -> DecEq a => Transitive (List a) (~@~) where
+    transitive {x=original} {y=permutation} {z=anotherPermutation} isPermutationOP isPermutationPA occursInOriginal occursInAnother =
+      let
+        (_ ** occursInPermutation) = countOccurrences anElement permutation
+      in transitive (isPermutationOP occursInOriginal occursInPermutation) (isPermutationPA occursInPermutation occursInAnother)
+
+public export
+[symmetricIsPermutationOf] {0 a: Type} -> Symmetric (List a) (~@~) where
+    symmetric isPermutation occurrsInPermutation occurrsInOriginal= sym $ isPermutation occurrsInOriginal occurrsInPermutation
+
+SingletonPermutationIsIdentity : {0 a: Type} -> {x, y: a} -> DecEq a => [x] ~@~ [y] -> [x] = [y]
+SingletonPermutationIsIdentity isPermutationOfXY with (decEq x y)
+  SingletonPermutationIsIdentity isPermutationOfXY | (Yes prf) = cong (\e => [e]) prf
+  SingletonPermutationIsIdentity isPermutationOfXY | (No contra) with (isPermutationOfXY (Here Nowhere) (There Nowhere contra))
+    SingletonPermutationIsIdentity isPermutationOfXY | (No contra) | _ impossible
+
+PermutationOfCons : {0 a: Type} -> {x: a} -> {0 xs, ys: List a} -> DecEq a => x::xs ~@~ x::ys ->  xs ~@~ ys
+PermutationOfCons f occursInOriginal occursInPermutation with (decEq anElement x)
+  PermutationOfCons f occursInOriginal occursInPermutation | (Yes anElementEqX) = cong pred $ f (Here $ SameOccurrent occursInOriginal $ sym anElementEqX) (Here $ SameOccurrent occursInPermutation $ sym anElementEqX)
+  PermutationOfCons f occursInOriginal occursInPermutation | (No anElementNEqX) = f (There occursInOriginal anElementNEqX) (There occursInPermutation anElementNEqX)
+
+-- \ PermutationOf (~@~)
+
+-- Sorted
+
+public export
+data Sorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => List a -> Type where
+    NilIsSorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} Nil
+    SingletonIsSorted : {0 a: Type} -> {x: a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} [x]
+    SeveralAreSorted: {0 a: Type} -> {x, y: a} -> {ys: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => rel x y -> Sorted @{lo} (y::ys) -> Sorted @{lo} (x::y::ys)
+
+public export
+sortedTail : {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
+sortedTail SingletonIsSorted = NilIsSorted
+sortedTail (SeveralAreSorted z w) = w
+
+public export
+RelatesToAll : {a: Type} -> (rel: Rel a) -> (x: a) -> List a -> Type
+RelatesToAll rel x xs = {x': a} -> {n: Nat} -> Occurs x' (S n) xs -> rel x x'
+
+public export
+sortedHead : {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Transitive a rel => Sorted @{lo} (x::xs) -> RelatesToAll rel x xs
+sortedHead SingletonIsSorted z = absurdity @{uninhabitedOccursAtLeastOnceInNil} z
+sortedHead (SeveralAreSorted y _) (Here _) = y
+sortedHead (SeveralAreSorted y w) (There z f) = transitive y $ sortedHead w z
+
+-- \Sorted
 
 public export
 IsSortingOf : {a: Type} -> {rel: Rel a} -> (lo: LinearOrder a rel) => Rel (List a)
@@ -248,16 +266,12 @@ Sorting : {a: Type} -> {rel: Rel a} -> {original: List a} -> (lo: LinearOrder a 
 Sorting = (List a) # (IsSortingOf @{lo} original)
 
 public export
-RelatesToAll : {a: Type} -> (rel: Rel a) -> (x: a) -> List a -> Type
-RelatesToAll rel x xs = (x': a) -> (n: Nat) -> Occurs x' (S n) xs -> rel x x'
-
-public export
 tailS : {a: Type} -> {x: a} -> {rel: Rel a} -> {xs, original: List a} -> (de: DecEq a) => (lo: LinearOrder a rel) =>
   IsSortingOf {lo=lo} original (x::xs) -> List a # ((RelatesToAll rel x) && (flip (IsSortingOf {lo=lo}) xs))
-tailS (SingletonIsSorted, z) = [] # (\_ => \_ => \un => absurdity @{uninhabitedOccursAtLeastOnceInNil} un, NilIsSorted, reflexive @{reflexiveIsPermutationOf})
-tailS {xs=x'::xs} {original=[]} ((SeveralAreSorted rel_x_y sorted_x'_xs), isPermutationOf_original_xx'xs) = absurdity @{uninhabitedIsPermutationOfNilCons @{de}} isPermutationOf_original_xx'xs
-tailS {xs=x'::xs} {original=[y]} ((SeveralAreSorted rel_x_y sorted_x'_xs), isPermutationOf_original_xx'xs) = absurdity @{uninhabitedIsPermutationOfConsConsXsConsNil @{de}} (symmetric @{symmetricIsPermutationOf} isPermutationOf_original_xx'xs)
-tailS {xs=x'::xs} {original=y::y'::ys} ((SeveralAreSorted rel_x_y sorted_x'_xs), isPermutationOf_yy'ys_xx'xs) = xs # (?tailS_0, sorted_x'_xs, ?tailS_2)
+tailS (SingletonIsSorted, z) = [] # (absurd @{uninhabitedOccursAtLeastOnceInNil}, NilIsSorted, reflexive @{reflexiveIsPermutationOf})
+tailS {xs} {original=[]} (_, isPerm) = absurdity @{uninhabitedIsPermutationOfNilCons @{de}} isPerm
+tailS {xs=_::_} {original=[y]} (_, isPerm) = absurdity @{uninhabitedIsPermutationOfConsConsXsConsNil @{de}} (symmetric @{symmetricIsPermutationOf} isPerm)
+tailS {xs=x'::xs} {original=y::y'::ys} (sortedXX'Xs @(SeveralAreSorted rel_x_y sorted_x'_xs), isPermutationOf_yy'ys_xx'xs) = (x'::xs) # ((sortedHead sortedXX'Xs), sorted_x'_xs, OccursTheSameNumberOfTimes)
 
 covering
 public export
