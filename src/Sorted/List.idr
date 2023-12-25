@@ -89,23 +89,20 @@ public export
             {p = \yyy => {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> Occurs anElement occurrenciesInOriginal (x :: (x' :: xs)) -> Occurs anElement occurrenciesInPermutation (yyy::y'::ys) -> occurrenciesInOriginal = occurrenciesInPermutation}
             (sym xEqY)
             isPermutationOfXsYs
-        in cong2 Prelude.(::) xEqY $ antisymmetric @{antisymmetricIsSortingOf {lo=lo}} {rel = IsSortingOf {a=a} {rel=rel} {lo=lo}} (sortedY'Ys, allButX) (sortedX'Xs, symmetric @{symmetricIsPermutationOf} allButX)
+          in cong2 Prelude.(::) xEqY $ antisymmetric @{antisymmetricIsSortingOf {lo=lo}} {rel = IsSortingOf {a=a} {rel=rel} {lo=lo}} (sortedY'Ys, allButX) (sortedX'Xs, symmetric @{symmetricIsPermutationOf} allButX)
       antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) with (connex {rel=rel} @{%search} xNEqY)
         antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) | (Left relXY) =
           let
             sortedYY'Ys : Sorted (y::y'::ys) = SeveralAreSorted relYY' sortedY'Ys
             (_ ** timesXOccursInX'Xs) = countOccurrences x (x'::xs)
             xInY'Ys : Occurs x (S _) (y'::ys) = NotHere (ElemOfPermutation isPermutationOfXsYs $ Here timesXOccursInX'Xs) xNEqY
-            nailInTheCoffin : rel y x = HeadIsInfimum sortedYY'Ys xInY'Ys
-          in void $ xNEqY $ antisymmetric @{%search} relXY nailInTheCoffin
+          in void $ xNEqY $ antisymmetric @{%search} relXY $  HeadIsInfimum sortedYY'Ys xInY'Ys
         antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) | (Right relYX) =
           let
             sortedXX'Xs : Sorted (x::x'::xs) = SeveralAreSorted relXX' sortedX'Xs
             (_ ** timesYOccursInY'Ys) = countOccurrences y (y'::ys)
             yInX'Xs : Occurs y (S _) (x'::xs) = NotHere (ElemOfPermutation isPermutationOfYsXs $ Here timesYOccursInY'Ys) (\yEqX => xNEqY $ sym yEqX)
-            nailInTheCoffin : rel x y = HeadIsInfimum sortedXX'Xs yInX'Xs
-          in void $ xNEqY $ antisymmetric @{%search}  nailInTheCoffin relYX
-
+          in void $ xNEqY $ antisymmetric @{%search} (HeadIsInfimum sortedXX'Xs yInX'Xs) relYX
 
 lengthSuc : (xs : List a) -> (y : a) -> (ys : List a) ->
             length (xs ++ (y :: ys)) = S (length (xs ++ ys))
