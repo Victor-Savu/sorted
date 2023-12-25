@@ -12,155 +12,28 @@ import Data.List.Quantifiers
 import Data.Void
 import Decidable.Equality
 
-import Sorted.Prop
+import public Sorted.Occurs
+import public Sorted.Perm
+import public Sorted.Prop
+import public Sorted.Relates
 
 %default total
-%search_timeout 100
-
-||| A proof that some element occurs in a list n number of times.
-public export
-data Occurs : {0 a: Type} -> a -> Nat -> List a -> Type where
-     ||| A proof that the element is at the head of the list
-     Here : {0 a: Type} -> {0 occurrent: a} -> {0 occurrencies: Nat} -> {0 occurrences: List a} -> Occurs occurrent occurrencies occurrences ->  Occurs occurrent (1+occurrencies) (occurrent :: occurrences)
-     ||| A proof that the element is in the tail of the list
-     There : {0 a: Type} -> {0 occurrent, notTheOccurrent: a} -> {0 occurrencies: Nat} -> {0 occurrences: List a} -> Occurs occurrent occurrencies occurrences -> Not (occurrent=notTheOccurrent) -> Occurs occurrent occurrencies (notTheOccurrent :: occurrences)
-     ||| A proof that the element is not in the empty list
-     Nowhere: {0 a: Type} -> {0 occurrent: a} -> Occurs occurrent 0 []
-
-SameOccurrent : {0 a: Type} -> {0 occurrent, another: a} -> {0 occurrencies: Nat} -> {0 occurrences: List a} -> Occurs occurrent occurrencies occurrences -> another = occurrent -> Occurs another occurrencies occurrences
-SameOccurrent x prf = rewrite prf in x
-
-OccursTheSameNumberOfTimes : {0 a: Type} -> {0 x: a} -> {0 m, n: Nat} -> {0 xs: List a} -> Occurs x m xs -> Occurs x n xs -> m = n
-OccursTheSameNumberOfTimes Nowhere Nowhere = Refl
-OccursTheSameNumberOfTimes (There _ f) (Here _) = void $ f Refl
-OccursTheSameNumberOfTimes (There y _) (There z _) = OccursTheSameNumberOfTimes y z
-OccursTheSameNumberOfTimes (Here _) Nowhere impossible
-OccursTheSameNumberOfTimes (Here pm) (Here pn) = cong S $ OccursTheSameNumberOfTimes pm pn
-OccursTheSameNumberOfTimes (Here _) (There _ f) = void $ f Refl
-
-public export
-[uninhabitedOccursAtLeastOnceInNil] {0 a: Type} -> {0 x: a} -> Uninhabited (Occurs x (S _) []) where
-  uninhabited Here impossible
-
-public export
-[uninhabitedOccursZeroTimesWhenHeadMatches] {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> Uninhabited (Occurs x 0 (x::xs)) where
-  uninhabited (There _ f) = f Refl
-
-public export
-countOccurrences: {0 a: Type} -> DecEq a => (x: a) -> (l: List a) -> DPair Nat (\n => Occurs x n l)
-countOccurrences x [] = (0 ** Nowhere)
-countOccurrences x (y :: xs) with (countOccurrences x xs)
-  countOccurrences x (y :: xs) | (f ** prf) with (decEq x y)
-    countOccurrences x (y :: xs) | (f ** prf) | (Yes z) = (S f ** rewrite sym z in Here prf)
-    countOccurrences x (y :: xs) | (f ** prf) | (No contra) = (f ** There prf contra)
-
--- PermutationOf (~@~)
-
-infixr 4 ~@~
-
-(~@~) : {a: Type} -> Rel (List a)
-original ~@~ permutation = {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> (occursInOriginal: Occurs anElement occurrenciesInOriginal original) -> (occursInPermutation: Occurs anElement occurrenciesInPermutation permutation) -> occurrenciesInOriginal = occurrenciesInPermutation
-
-public export
-[uninhabitedIsPermutationOfConsNil] {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> DecEq a => Uninhabited (x::xs ~@~ []) where
-    uninhabited isPermutationOfConsNil = absurdity $ isPermutationOfConsNil (Here $ let (0 ** xInXsPrf) = countOccurrences x xs in xInXsPrf) Nowhere
-
-public export
-[uninhabitedIsPermutationOfNilCons] {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> DecEq a => Uninhabited ([] ~@~ x::xs) where
-    uninhabited isPermutationOfNilCons = absurdity $ isPermutationOfNilCons Nowhere (Here $ let (0 ** xInXsPrf) = countOccurrences x xs in xInXsPrf)
-
-[uninhabitedIsPermutationOfConsConsXsConsNil] {0 a: Type} -> {x, x', y: a} -> {xs: List a} -> DecEq a => Uninhabited (x::x'::xs ~@~ [y]) where
-  uninhabited ipo with (decEq x x')
-    uninhabited ipo | (Yes xEqX') with (decEq x y)
-      uninhabited ipo | (Yes xEqX') | (Yes xEqY) =
-        let 
-          allAboutX = replace
-            {p = \yyy => {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> Occurs anElement occurrenciesInOriginal (x :: (yyy :: xs)) -> Occurs anElement occurrenciesInPermutation [x] -> occurrenciesInOriginal = occurrenciesInPermutation}
-            (sym xEqX') $
-            replace
-            {p = \yyy => {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> Occurs anElement occurrenciesInOriginal (x :: (x' :: xs)) -> Occurs anElement occurrenciesInPermutation [yyy] -> occurrenciesInOriginal = occurrenciesInPermutation}
-            (sym xEqY)
-            ipo
-          (_ ** xInXsPrf) = countOccurrences x xs
-          succSuccEqOne = allAboutX (Here $ Here xInXsPrf) (Here Nowhere)
-        in uninhabited succSuccEqOne
-      uninhabited ipo | (Yes xEqX') | (No xNEqY) =
-        let
-          allAboutX = replace
-            {p = \yyy => {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> Occurs anElement occurrenciesInOriginal (x :: (yyy :: xs)) -> Occurs anElement occurrenciesInPermutation [y] -> occurrenciesInOriginal = occurrenciesInPermutation}
-            (sym xEqX')
-            ipo
-          (_ ** xInXsPrf) = countOccurrences x xs
-          succSuccEqZero = allAboutX (Here $ Here xInXsPrf) (There Nowhere xNEqY)
-        in uninhabited succSuccEqZero
-    uninhabited ipo | (No xNEqX') with (decEq x y)
-      uninhabited ipo | (No xNEqX') | (No xNEqY) =
-        let
-          (xInXs ** xInXsPrf) = countOccurrences x xs
-          succEqZero = ipo (Here $ There xInXsPrf xNEqX') (There Nowhere xNEqY)
-        in uninhabited succEqZero
-      uninhabited ipo | (No xNEqX') | (Yes xEqY) with (decEq x' y)
-        uninhabited ipo | (No xNEqX') | (Yes xEqY) | (Yes x'EqY) = xNEqX' $ transitive xEqY (sym x'EqY)
-        uninhabited ipo | (No xNEqX') | (Yes xEqY) | (No x'NEqY) =
-          let
-            (x'InXs ** x'InXsPrf) = countOccurrences x' xs
-            sym' = sym {x=x} {y=x'}
-            x'NeqX : (x' = x -> Void) = \prf => let symprf = sym prf in xNEqX' symprf
-            succEqZero = ipo (There (Here x'InXsPrf) x'NeqX) (There Nowhere x'NEqY)
-          in uninhabited succEqZero
-
-public export
-[reflexiveIsPermutationOf] {0 a: Type} -> Reflexive (List a) (~@~) where
-    reflexive Nowhere Nowhere = Refl
-    reflexive (There y f) (Here z) = void $ f Refl
-    reflexive (There y f) (There z g) = reflexive @{reflexiveIsPermutationOf} y z
-    reflexive (Here _) Nowhere impossible
-    reflexive (Here pm) (Here pn) = cong S $ reflexive @{reflexiveIsPermutationOf} pm pn
-    reflexive (Here _) (There _ f) = void $ f Refl
-
-public export
-[transitiveIsPermutationOf] {0 a: Type} -> DecEq a => Transitive (List a) (~@~) where
-    transitive {x=original} {y=permutation} {z=anotherPermutation} isPermutationOP isPermutationPA occursInOriginal occursInAnother =
-      let
-        (_ ** occursInPermutation) = countOccurrences anElement permutation
-      in transitive (isPermutationOP occursInOriginal occursInPermutation) (isPermutationPA occursInPermutation occursInAnother)
-
-public export
-[symmetricIsPermutationOf] {0 a: Type} -> Symmetric (List a) (~@~) where
-    symmetric isPermutation occurrsInPermutation occurrsInOriginal= sym $ isPermutation occurrsInOriginal occurrsInPermutation
-
-SingletonPermutationIsIdentity : {0 a: Type} -> {x, y: a} -> DecEq a => [x] ~@~ [y] -> [x] = [y]
-SingletonPermutationIsIdentity isPermutationOfXY with (decEq x y)
-  SingletonPermutationIsIdentity isPermutationOfXY | (Yes prf) = cong (\e => [e]) prf
-  SingletonPermutationIsIdentity isPermutationOfXY | (No contra) with (isPermutationOfXY (Here Nowhere) (There Nowhere contra))
-    SingletonPermutationIsIdentity isPermutationOfXY | (No contra) | _ impossible
-
-PermutationOfCons : {0 a: Type} -> {x: a} -> {0 xs, ys: List a} -> DecEq a => x::xs ~@~ x::ys ->  xs ~@~ ys
-PermutationOfCons f occursInOriginal occursInPermutation with (decEq anElement x)
-  PermutationOfCons f occursInOriginal occursInPermutation | (Yes anElementEqX) = cong pred $ f (Here $ SameOccurrent occursInOriginal $ sym anElementEqX) (Here $ SameOccurrent occursInPermutation $ sym anElementEqX)
-  PermutationOfCons f occursInOriginal occursInPermutation | (No anElementNEqX) = f (There occursInOriginal anElementNEqX) (There occursInPermutation anElementNEqX)
-
--- \ PermutationOf (~@~)
 
 -- Sorted
 
 public export
-data Sorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => List a -> Type where
-    NilIsSorted: {0 a: Type} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} Nil
-    SingletonIsSorted : {0 a: Type} -> {x: a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} [x]
-    SeveralAreSorted: {0 a: Type} -> {x, y: a} -> {ys: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => rel x y -> Sorted @{lo} (y::ys) -> Sorted @{lo} (x::y::ys)
+data Sorted: LinearOrder a rel => List a -> Type where
+    NilIsSorted: (0 lo: LinearOrder a rel) => Sorted @{lo} Nil
+    SingletonIsSorted : (0 lo: LinearOrder a rel) => Sorted @{lo} [x]
+    SeveralAreSorted: {x, y: a} -> rel x y -> (0 lo: LinearOrder a rel) => Sorted @{lo} (y::ys) -> Sorted @{lo} (x::y::ys)
 
 public export
-sortedTail : {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
+sortedTail : (0 lo: LinearOrder a rel) => Sorted @{lo} (x::xs) -> Sorted @{lo} xs
 sortedTail SingletonIsSorted = NilIsSorted
 sortedTail (SeveralAreSorted z w) = w
 
 public export
-RelatesToAll : {a: Type} -> (rel: Rel a) -> (x: a) -> List a -> Type
-RelatesToAll rel x xs = {x': a} -> {n: Nat} -> Occurs x' (S n) xs -> rel x x'
-
-public export
-sortedHead : {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> {0 rel: Rel a} -> (0 lo: LinearOrder a rel) => Transitive a rel => Sorted @{lo} (x::xs) -> RelatesToAll rel x xs
+sortedHead : (0 lo: LinearOrder a rel) => Transitive a rel => Sorted @{lo} (x::xs) -> RelatesToAll rel x xs
 sortedHead SingletonIsSorted z = absurdity @{uninhabitedOccursAtLeastOnceInNil} z
 sortedHead (SeveralAreSorted y _) (Here _) = y
 sortedHead (SeveralAreSorted y w) (There z f) = transitive y $ sortedHead w z
@@ -168,7 +41,7 @@ sortedHead (SeveralAreSorted y w) (There z f) = transitive y $ sortedHead w z
 -- \Sorted
 
 public export
-IsSortingOf : {a: Type} -> {rel: Rel a} -> (lo: LinearOrder a rel) => Rel (List a)
+0 IsSortingOf : (lo: LinearOrder a rel) => Rel (List a)
 IsSortingOf as = Sorted @{lo} && (as ~@~)
 
 public export
@@ -180,12 +53,12 @@ public export
     transitive (_, s) (w, t) = (w, transitive @{transitiveIsPermutationOf} s t)
 
 public export
-HeadIsInfimum : {e': a} -> {lo: LinearOrder a rel} -> Sorted @{lo} (e::es) -> Occurs e' (S n) es -> rel e e'
+HeadIsInfimum : {e': a} -> (lo: LinearOrder a rel) => Sorted @{lo} (e::es) -> Occurs e' (S n) es -> rel e e'
 HeadIsInfimum SingletonIsSorted (Here _) impossible
 HeadIsInfimum SingletonIsSorted (There _ _) impossible
 HeadIsInfimum SingletonIsSorted Nowhere impossible
 HeadIsInfimum {n=n} {e = e} {es = (e' :: es)} {e' = e'} (SeveralAreSorted relEE' sortedE'Es) (Here x) = relEE'
-HeadIsInfimum {n=n} {e = e} {es = (e'' :: es)} {e' = e'} (SeveralAreSorted relEE'' sortedE''Es) (There occursE'SnEs _) = transitive relEE'' $HeadIsInfimum sortedE''Es occursE'SnEs
+HeadIsInfimum {n=n} {e = e} {es = (e'' :: es)} {e' = e'} (SeveralAreSorted relEE'' sortedE''Es) (There occursE'SnEs _) = transitive relEE'' $ HeadIsInfimum sortedE''Es occursE'SnEs
 
 NotHere : Occurs x (S n) (other::xs) -> Not (x=other) -> Occurs x (S n) xs
 NotHere (Here _) f = void $ f Refl
@@ -254,24 +127,76 @@ smallerRight : (ys : List a) -> (zs : List a) ->
 smallerRight ys zs = rewrite lengthSuc ys y zs in
                      (LTESucc (LTESucc (lengthLT _ _)))
 
-public export
-sameasitis : {xs: List a} -> xs ++ [] = xs
-sameasitis {xs = []} = Refl
-sameasitis {xs = (x :: xs)} = cong (x ::) $ sameasitis {xs=xs}
-
 -- The sorting of a list starts with the minimum element. The If we have a sorting 
 
-public export
-Sorting : {a: Type} -> {rel: Rel a} -> {original: List a} -> (lo: LinearOrder a rel) => Type
-Sorting = (List a) # (IsSortingOf @{lo} original)
 
-public export
-tailS : {a: Type} -> {x: a} -> {rel: Rel a} -> {xs, original: List a} -> (de: DecEq a) => (lo: LinearOrder a rel) =>
-  IsSortingOf {lo=lo} original (x::xs) -> List a # ((RelatesToAll rel x) && (flip (IsSortingOf {lo=lo}) xs))
-tailS (SingletonIsSorted, z) = [] # (absurd @{uninhabitedOccursAtLeastOnceInNil}, NilIsSorted, reflexive @{reflexiveIsPermutationOf})
-tailS {xs} {original=[]} (_, isPerm) = absurdity @{uninhabitedIsPermutationOfNilCons @{de}} isPerm
-tailS {xs=_::_} {original=[y]} (_, isPerm) = absurdity @{uninhabitedIsPermutationOfConsConsXsConsNil @{de}} (symmetric @{symmetricIsPermutationOf} isPerm)
-tailS {xs=x'::xs} {original=y::y'::ys} (sortedXX'Xs @(SeveralAreSorted rel_x_y sorted_x'_xs), isPermutationOf_yy'ys_xx'xs) = (x'::xs) # ((sortedHead sortedXX'Xs), sorted_x'_xs, OccursTheSameNumberOfTimes)
+covering
+merge' : (lo: LinearOrder a rel) => {left, right: List a} -> (left': (List a) # (IsSortingOf @{lo}  left)) -> (right': (List a) # (IsSortingOf @{lo}  right)) -> DecEq a => (List a) # (IsSortingOf @{lo} (left ++ right))
+merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) _ = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
+merge' {left = []} {right = right} ([] # isSortingOfLeft) theSortingOfRight = theSortingOfRight
+merge' {left = (w :: xs1)} {right = []} theSortingOfLeft _ = rewrite sameasitis {xs=(w::xs1)} in theSortingOfLeft
+merge' {left = (w :: xs1)} {right = (v :: ys1)} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfLeft
+merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ([] # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfRight
+merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) =
+  let
+    disc : Either (rel minLeft minRight) (rel minRight minLeft) = case (decEq minLeft minRight) of
+      (Yes mlEqMr) => Right $ rewrite mlEqMr in reflexive
+      (No contra) => connex contra
+  in case disc of
+    (Left rel_l_r) =>
+      let
+        merged # prf = merge'
+          (tailSortedLeft  # (sortedTail $ fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
+          ((minRight::tailSortedRight) # (fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
+      in (minLeft::merged #
+        let
+          (mergeIsSorted, mergeIsPermutationOfSum) = prf
+        in case merged of
+          [] => let
+              (mrInTsr ** mrInTsrPrf) = countOccurrences minRight tailSortedRight
+              (mrInTsl ** mrInTslPrf) = countOccurrences minRight tailSortedLeft
+              mrInMrTsr = Here mrInTsrPrf
+              mrInTotal = mrInTslPrf + mrInMrTsr
+              mrw = replace {p = \swee => Occurs minRight swee (tailSortedLeft ++ (minRight::tailSortedRight))} (sym $ plusSuccRightSucc mrInTsl mrInTsr) mrInTotal
+            in absurdity $ mergeIsPermutationOfSum mrw Nowhere
+          (mergedH::mergedT) => let
+              ml_rel_any_left = sortedHead $ fst isSortingOfLeft
+              mr_rel_any_right = (reflexive {rel=rel} {x=minRight} :: (sortedHead {rel=rel} $ fst isSortingOfRight)) {rel=rel} {x=minRight} 
+              ml_rel_any_right: RelatesToAll rel minLeft (minRight::tailSortedRight) = transitive rel_l_r . mr_rel_any_right
+              ml_rel_any_lr = (ml_rel_any_left ++ ml_rel_any_right) {rel=rel}
+              ml_rel_merged = (ml_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
+              (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
+              abc = minLeft::mergeIsPermutationOfSum
+              cde = snd isSortingOfLeft ++ snd isSortingOfRight
+            in (SeveralAreSorted (ml_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+        )
+    (Right rel_r_l) =>
+      let
+        merged # prf = merge'
+          ((minLeft::tailSortedLeft) # (fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
+          (tailSortedRight  # (sortedTail $ fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
+      in (minRight::merged #
+        let
+          (mergeIsSorted, mergeIsPermutationOfSum) = prf
+        in case merged of
+          [] => let
+              (mlInTsl ** mlInTslPrf) = countOccurrences minLeft tailSortedLeft
+              (mlInTsr ** mlInTsrPrf) = countOccurrences minLeft tailSortedRight
+              mlInMlTsl = Here mlInTslPrf
+              mlInTotal = rewrite sym $ plusSuccRightSucc mlInTsl mlInTsr in mlInMlTsl + mlInTsrPrf
+              mrw = replace {p = \swee => Occurs minLeft swee ((minLeft::tailSortedLeft) ++ tailSortedRight)} (sym $ plusSuccRightSucc mlInTsl mlInTsr) mlInTotal
+            in absurdity $ mergeIsPermutationOfSum mrw Nowhere
+          (mergedH::mergedT) => let
+              mr_rel_any_right = sortedHead $ fst isSortingOfRight
+              ml_rel_any_left = (reflexive {rel=rel} {x=minLeft} :: (sortedHead {rel=rel} $ fst isSortingOfLeft)) {rel=rel} {x=minLeft} 
+              mr_rel_any_left: RelatesToAll rel minRight (minLeft::tailSortedLeft) = transitive rel_r_l . ml_rel_any_left
+              mr_rel_any_lr = (mr_rel_any_left ++ mr_rel_any_right) {rel=rel}
+              mr_rel_merged = (mr_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
+              (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
+              abc = symmetric @{symmetricIsPermutationOf} $ AdditionOfPermutationsCommutes {xs=minRight::tailSortedRight} (minRight::(AdditionOfPermutationsCommutes {xs=minLeft::tailSortedLeft} $ symmetric @{symmetricIsPermutationOf} mergeIsPermutationOfSum))
+              cde = snd isSortingOfLeft ++ snd isSortingOfRight
+            in (SeveralAreSorted (mr_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+        )
 
 covering
 public export
@@ -284,13 +209,4 @@ mergeSort as with (sizeAccessible as)
       mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ([] # cantBe ) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd cantBe
       mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) with (mergeSort (y::ys) | acc _ (smallerRight xs ys))
         mergeSort (x :: (xs ++ (y :: ys))) | (Access rec) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) | ([] # cantBe) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd cantBe
-        mergeSort (x :: (xs ++ (y :: ys))) | (Access rec) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) | ((z' :: zs') # prfZs') = merge' ((z :: zs) # prfZs) ((z' :: zs') # prfZs') where
-            merge' : {left, right: List a} -> (left': Sorting {lo=lo} {original=left}) -> (right': Sorting {lo=lo} {original=right}) -> (List a) # (IsSortingOf @{lo} (left ++ right))
-            merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) _ = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
-            merge' {left = []} {right = right} ([] # isSortingOfLeft) theSortingOfRight = theSortingOfRight
-            merge' {left = (w :: xs1)} {right = []} theSortingOfLeft _ = rewrite sameasitis {xs=(w::xs1)} in theSortingOfLeft
-            merge' {left = (w :: xs1)} {right = (v :: ys1)} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfLeft
-            merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ([] # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfRight
-            merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) with (decEq w v)
-              merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) | (Yes prf) = ?merge'_0_rhs0_0
-              merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) | (No contra) = ?merge'_0_rhs0_1
+        mergeSort (x :: (xs ++ (y :: ys))) | (Access rec) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) | ((z' :: zs') # prfZs') = merge' ((z :: zs) # prfZs) ((z' :: zs') # prfZs')
