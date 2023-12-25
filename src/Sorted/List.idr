@@ -127,78 +127,81 @@ smallerRight : (ys : List a) -> (zs : List a) ->
 smallerRight ys zs = rewrite lengthSuc ys y zs in
                      (LTESucc (LTESucc (lengthLT _ _)))
 
+smallerMerge : (xs: List a) -> (y: a) -> (ys: List a) ->  LTE (S (S (length (xs ++ ys)))) (S (length (xs ++ (y :: ys))))
+smallerMerge xs y ys = LTESucc $ replace {p = \arg => LTE arg (length (xs ++ (y::ys))) } (lengthSuc xs y ys) (reflexive {x=length (xs++(y::ys))})
+
 -- The sorting of a list starts with the minimum element. The If we have a sorting 
 
-
-covering
 merge' : (lo: LinearOrder a rel) => {left, right: List a} -> (left': (List a) # (IsSortingOf @{lo}  left)) -> (right': (List a) # (IsSortingOf @{lo}  right)) -> DecEq a => (List a) # (IsSortingOf @{lo} (left ++ right))
-merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) _ = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
-merge' {left = []} {right = right} ([] # isSortingOfLeft) theSortingOfRight = theSortingOfRight
-merge' {left = (w :: xs1)} {right = []} theSortingOfLeft _ = rewrite sameasitis {xs=(w::xs1)} in theSortingOfLeft
-merge' {left = (w :: xs1)} {right = (v :: ys1)} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfLeft
-merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ([] # isSortingOfRight) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfRight
-merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) =
-  let
-    disc : Either (rel minLeft minRight) (rel minRight minLeft) = case (decEq minLeft minRight) of
-      (Yes mlEqMr) => Right $ rewrite mlEqMr in reflexive
-      (No contra) => connex contra
-  in case disc of
-    (Left rel_l_r) =>
-      let
-        merged # prf = merge'
-          (tailSortedLeft  # (sortedTail $ fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
-          ((minRight::tailSortedRight) # (fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
-      in (minLeft::merged #
+merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (sizeAccessible (sortedLeft ++ sortedRight))
+  merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
+  merge' {left = []} {right = right} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = (sortedRight # isSortingOfRight)
+  merge' {left = (w :: xs1)} {right = []} (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = rewrite sameasitis {xs=(w::xs1)} in (sortedLeft # isSortingOfLeft)
+  merge' {left = (w :: xs1)} {right = (v :: ys1)} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfLeft
+  merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ([] # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfRight
+  merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) | Access acc =
+    let
+      disc : Either (rel minLeft minRight) (rel minRight minLeft) = case (decEq minLeft minRight) of
+        (Yes mlEqMr) => Right $ rewrite mlEqMr in reflexive
+        (No contra) => connex contra
+    in case disc of
+      (Left rel_l_r) =>
         let
-          (mergeIsSorted, mergeIsPermutationOfSum) = prf
-        in case merged of
-          [] => let
-              (mrInTsr ** mrInTsrPrf) = countOccurrences minRight tailSortedRight
-              (mrInTsl ** mrInTslPrf) = countOccurrences minRight tailSortedLeft
-              mrInMrTsr = Here mrInTsrPrf
-              mrInTotal = mrInTslPrf + mrInMrTsr
-              mrw = replace {p = \swee => Occurs minRight swee (tailSortedLeft ++ (minRight::tailSortedRight))} (sym $ plusSuccRightSucc mrInTsl mrInTsr) mrInTotal
-            in absurdity $ mergeIsPermutationOfSum mrw Nowhere
-          (mergedH::mergedT) => let
-              ml_rel_any_left = sortedHead $ fst isSortingOfLeft
-              mr_rel_any_right = (reflexive {rel=rel} {x=minRight} :: (sortedHead {rel=rel} $ fst isSortingOfRight)) {rel=rel} {x=minRight} 
-              ml_rel_any_right: RelatesToAll rel minLeft (minRight::tailSortedRight) = transitive rel_l_r . mr_rel_any_right
-              ml_rel_any_lr = (ml_rel_any_left ++ ml_rel_any_right) {rel=rel}
-              ml_rel_merged = (ml_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
-              (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
-              abc = minLeft::mergeIsPermutationOfSum
-              cde = snd isSortingOfLeft ++ snd isSortingOfRight
-            in (SeveralAreSorted (ml_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
-        )
-    (Right rel_r_l) =>
-      let
-        merged # prf = merge'
-          ((minLeft::tailSortedLeft) # (fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
-          (tailSortedRight  # (sortedTail $ fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
-      in (minRight::merged #
+          merged # prf = (merge'
+            (tailSortedLeft  # (sortedTail $ fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
+            ((minRight::tailSortedRight) # (fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
+              | acc _ reflexive)
+        in (minLeft::merged #
+          let
+            (mergeIsSorted, mergeIsPermutationOfSum) = prf
+          in case merged of
+            [] => let
+                (mrInTsr ** mrInTsrPrf) = countOccurrences minRight tailSortedRight
+                (mrInTsl ** mrInTslPrf) = countOccurrences minRight tailSortedLeft
+                mrInMrTsr = Here mrInTsrPrf
+                mrInTotal = mrInTslPrf + mrInMrTsr
+                mrw = replace {p = \swee => Occurs minRight swee (tailSortedLeft ++ (minRight::tailSortedRight))} (sym $ plusSuccRightSucc mrInTsl mrInTsr) mrInTotal
+              in absurdity $ mergeIsPermutationOfSum mrw Nowhere
+            (mergedH::mergedT) => let
+                ml_rel_any_left = sortedHead $ fst isSortingOfLeft
+                mr_rel_any_right = (reflexive {rel=rel} {x=minRight} :: (sortedHead {rel=rel} $ fst isSortingOfRight)) {rel=rel} {x=minRight} 
+                ml_rel_any_right: RelatesToAll rel minLeft (minRight::tailSortedRight) = transitive rel_l_r . mr_rel_any_right
+                ml_rel_any_lr = (ml_rel_any_left ++ ml_rel_any_right) {rel=rel}
+                ml_rel_merged = (ml_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
+                (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
+                abc = minLeft::mergeIsPermutationOfSum
+                cde = snd isSortingOfLeft ++ snd isSortingOfRight
+              in (SeveralAreSorted (ml_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+          )
+      (Right rel_r_l) =>
         let
-          (mergeIsSorted, mergeIsPermutationOfSum) = prf
-        in case merged of
-          [] => let
-              (mlInTsl ** mlInTslPrf) = countOccurrences minLeft tailSortedLeft
-              (mlInTsr ** mlInTsrPrf) = countOccurrences minLeft tailSortedRight
-              mlInMlTsl = Here mlInTslPrf
-              mlInTotal = rewrite sym $ plusSuccRightSucc mlInTsl mlInTsr in mlInMlTsl + mlInTsrPrf
-              mrw = replace {p = \swee => Occurs minLeft swee ((minLeft::tailSortedLeft) ++ tailSortedRight)} (sym $ plusSuccRightSucc mlInTsl mlInTsr) mlInTotal
-            in absurdity $ mergeIsPermutationOfSum mrw Nowhere
-          (mergedH::mergedT) => let
-              mr_rel_any_right = sortedHead $ fst isSortingOfRight
-              ml_rel_any_left = (reflexive {rel=rel} {x=minLeft} :: (sortedHead {rel=rel} $ fst isSortingOfLeft)) {rel=rel} {x=minLeft} 
-              mr_rel_any_left: RelatesToAll rel minRight (minLeft::tailSortedLeft) = transitive rel_r_l . ml_rel_any_left
-              mr_rel_any_lr = (mr_rel_any_left ++ mr_rel_any_right) {rel=rel}
-              mr_rel_merged = (mr_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
-              (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
-              abc = symmetric @{symmetricIsPermutationOf} $ AdditionOfPermutationsCommutes {xs=minRight::tailSortedRight} (minRight::(AdditionOfPermutationsCommutes {xs=minLeft::tailSortedLeft} $ symmetric @{symmetricIsPermutationOf} mergeIsPermutationOfSum))
-              cde = snd isSortingOfLeft ++ snd isSortingOfRight
-            in (SeveralAreSorted (mr_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
-        )
+          merged # prf = (merge'
+            ((minLeft::tailSortedLeft) # (fst isSortingOfLeft, reflexive @{reflexiveIsPermutationOf}))
+            (tailSortedRight  # (sortedTail $ fst isSortingOfRight, reflexive @{reflexiveIsPermutationOf}))
+              | acc _ (smallerMerge tailSortedLeft minRight tailSortedRight))
+        in (minRight::merged #
+          let
+            (mergeIsSorted, mergeIsPermutationOfSum) = prf
+          in case merged of
+            [] => let
+                (mlInTsl ** mlInTslPrf) = countOccurrences minLeft tailSortedLeft
+                (mlInTsr ** mlInTsrPrf) = countOccurrences minLeft tailSortedRight
+                mlInMlTsl = Here mlInTslPrf
+                mlInTotal = rewrite sym $ plusSuccRightSucc mlInTsl mlInTsr in mlInMlTsl + mlInTsrPrf
+                mrw = replace {p = \swee => Occurs minLeft swee ((minLeft::tailSortedLeft) ++ tailSortedRight)} (sym $ plusSuccRightSucc mlInTsl mlInTsr) mlInTotal
+              in absurdity $ mergeIsPermutationOfSum mrw Nowhere
+            (mergedH::mergedT) => let
+                mr_rel_any_right = sortedHead $ fst isSortingOfRight
+                ml_rel_any_left = (reflexive {rel=rel} {x=minLeft} :: (sortedHead {rel=rel} $ fst isSortingOfLeft)) {rel=rel} {x=minLeft} 
+                mr_rel_any_left: RelatesToAll rel minRight (minLeft::tailSortedLeft) = transitive rel_r_l . ml_rel_any_left
+                mr_rel_any_lr = (mr_rel_any_left ++ mr_rel_any_right) {rel=rel}
+                mr_rel_merged = (mr_rel_any_lr -@-> mergeIsPermutationOfSum) {rel=rel}
+                (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
+                abc = symmetric @{symmetricIsPermutationOf} $ AdditionOfPermutationsCommutes {xs=minRight::tailSortedRight} (minRight::(AdditionOfPermutationsCommutes {xs=minLeft::tailSortedLeft} $ symmetric @{symmetricIsPermutationOf} mergeIsPermutationOfSum))
+                cde = snd isSortingOfLeft ++ snd isSortingOfRight
+              in (SeveralAreSorted (mr_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+          )
 
-covering
 public export
 mergeSort :(as: List a) ->  DecEq a => (lo: LinearOrder a rel) => (List a) # (IsSortingOf @{lo} as)
 mergeSort as with (sizeAccessible as)
