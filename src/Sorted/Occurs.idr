@@ -40,6 +40,15 @@ countOccurrences x (y :: xs) with (countOccurrences x xs)
     countOccurrences x (y :: xs) | (f ** prf) | (No contra) = (f ** There prf contra)
 
 public export
+(::) : (x: a) -> Occurs x n xs -> Occurs x (S n) (x::xs)
+(::) _ y = Here y
+
+public export
+tail : Occurs x (S n) (x::xs) -> Occurs x n xs
+tail (Here y) = y
+tail (There y f) = void $ f Refl
+
+public export
 (+) : Occurs x n xs -> Occurs x m ys -> Occurs x (n+m) (xs++ys)
 (+) (Here y) z = Here (y + z)
 (+) (There y f) z = There (y + z) f

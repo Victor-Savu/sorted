@@ -132,4 +132,16 @@ public export
 (::) x f (Here y) (Here z) = cong S $ f y z
 (::) x f (Here y) (There g ne) = void $ ne Refl
 (::) x f (There y g) (Here z) = void $ g Refl
-(::) x f (There y g) (There z f1) = ?op_rhs_3
+(::) x f (There y g) (There z f1) = f y z
+
+public export
+tail : {x: a} -> x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
+tail permXY occursInOriginal occursInPermutation with (decEq anElement x)
+  tail permXY occursInOriginal occursInPermutation | (Yes anElementEqX) =
+    let
+      xInXXs = replace {p = \e => Occurs e (S occurrenciesInOriginal) (e::xs) } anElementEqX (anElement::occursInOriginal)
+      yInYYs = replace {p = \e => Occurs e (S occurrenciesInPermutation) (e::ys) } anElementEqX (anElement::occursInPermutation)
+      anElementInXXs = replace {p = \e => Occurs e (S occurrenciesInOriginal) (x::xs) } (sym anElementEqX) xInXXs
+      anElementInYYs = replace {p = \e => Occurs e (S occurrenciesInPermutation) (x::ys) } (sym anElementEqX) yInYYs
+    in injective $ permXY anElementInXXs anElementInYYs
+  tail permXY occursInOriginal occursInPermutation | (No anElementNEqX) = permXY (There occursInOriginal anElementNEqX) (There occursInPermutation anElementNEqX)

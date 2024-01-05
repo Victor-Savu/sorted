@@ -33,7 +33,7 @@ sortedTail SingletonIsSorted = NilIsSorted
 sortedTail (SeveralAreSorted z w) = w
 
 public export
-sortedHead : (0 lo: LinearOrder a rel) => Transitive a rel => Sorted @{lo} (x::xs) -> RelatesToAll rel x xs
+sortedHead : (lo: LinearOrder a rel) => Sorted @{lo} (x::xs) -> RelatesToAll rel x xs
 sortedHead SingletonIsSorted z = absurdity @{uninhabitedOccursAtLeastOnceInNil} z
 sortedHead (SeveralAreSorted y _) (Here _) = y
 sortedHead (SeveralAreSorted y w) (There z f) = transitive y $ sortedHead w z
@@ -52,18 +52,6 @@ public export
 {0 a: Type} -> {0 rel: Rel a} -> DecEq a => (lo: LinearOrder a rel) => Transitive (List a) (IsSortingOf @{lo}) where
     transitive (_, s) (w, t) = (w, transitive @{transitiveIsPermutationOf} s t)
 
-public export
-HeadIsInfimum : {e': a} -> (lo: LinearOrder a rel) => Sorted @{lo} (e::es) -> Occurs e' (S n) es -> rel e e'
-HeadIsInfimum SingletonIsSorted (Here _) impossible
-HeadIsInfimum SingletonIsSorted (There _ _) impossible
-HeadIsInfimum SingletonIsSorted Nowhere impossible
-HeadIsInfimum {n=n} {e = e} {es = (e' :: es)} {e' = e'} (SeveralAreSorted relEE' sortedE'Es) (Here x) = relEE'
-HeadIsInfimum {n=n} {e = e} {es = (e'' :: es)} {e' = e'} (SeveralAreSorted relEE'' sortedE''Es) (There occursE'SnEs _) = transitive relEE'' $ HeadIsInfimum sortedE''Es occursE'SnEs
-
-NotHere : Occurs x (S n) (other::xs) -> Not (x=other) -> Occurs x (S n) xs
-NotHere (Here _) f = void $ f Refl
-NotHere (There y _) _ = y
-
 ElemOfPermutation : {e: a} -> {n: Nat} -> {xs, ys: List a} -> DecEq a => xs ~@~ ys -> Occurs e (S n) xs -> Occurs e (S n) ys
 ElemOfPermutation {n} {xs} {ys} isPermutationOfXsYs eInXs with (countOccurrences e ys)
   ElemOfPermutation {xs = xs} {ys = ys} isPermutationOfXsYs eInXs | (0 ** snd) with (isPermutationOfXsYs eInXs snd)
@@ -71,38 +59,31 @@ ElemOfPermutation {n} {xs} {ys} isPermutationOfXsYs eInXs with (countOccurrences
   ElemOfPermutation {n} {xs = xs} {ys = ys} isPermutationOfXsYs eInXs | ((S k) ** snd) with (isPermutationOfXsYs eInXs snd)
     ElemOfPermutation {n} {xs = xs} {ys = ys} isPermutationOfXsYs eInXs | ((S n) ** snd) | Refl = snd
 
-covering
+
+aiso : (de: DecEq a) => (lo: LinearOrder a rel) => (xs: List a) -> (ys: List a) -> (isoXY: IsSortingOf @{lo} xs ys) -> (isoYX : IsSortingOf @{lo} ys xs) -> xs = ys
+aiso [] [] isoXY isoYX = Refl
+aiso [] (x :: xs) isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoXY
+aiso (x :: xs) [] isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoYX
+aiso (x::xs) (y::ys) (sortedY, ipoXY) (sortedX, ipoYX) with (decEq x y)
+  aiso (x::xs) (y::ys) (sortedY, ipoXY) (sortedX, ipoYX) | (No xNEqY) =
+    let
+      xRelYs = ((reflexive :: sortedHead sortedX) {rel=rel} -@-> ipoXY) {rel=rel}
+      yRelXs = ((reflexive :: sortedHead sortedY) {rel=rel} -@-> ipoYX) {rel=rel}
+      (xInXs ** xInXsPrf) = countOccurrences x xs
+      (yInYs ** yInYsPrf) = countOccurrences y ys
+      relXY = xRelYs (y :: yInYsPrf)
+      relYX = yRelXs (x :: xInXsPrf)
+    in void $ xNEqY $ antisymmetric relXY relYX
+  aiso (x::xs) (y::ys) (sortedY, ipoXY) (sortedX, ipoYX) | (Yes xEqY) =
+    let
+      ipoXY' = replace {p = \q => q::xs ~@~ y::ys } xEqY ipoXY
+      ipoYX' = replace {p = \q => q::ys ~@~ x::xs } (sym xEqY) ipoYX
+      step = aiso xs ys (sortedTail sortedY, tail ipoXY') (sortedTail sortedX, tail ipoYX')
+    in cong2 (::) xEqY step
+
 public export
-[antisymmetricIsSortingOf] {0 a: Type} -> {0 rel: Rel a} -> DecEq a => (lo: LinearOrder a rel) => Antisymmetric (List a) (IsSortingOf @{lo}) where
-    antisymmetric {x=[]} {y=[]} (NilIsSorted, isPermutationOfXsYs) (NilIsSorted, _) = Refl
-    antisymmetric {x=[x]} {y=[]} (NilIsSorted, isPermutationOfXsYs) (SingletonIsSorted, _) = absurdity @{uninhabitedIsPermutationOfConsNil} isPermutationOfXsYs
-    antisymmetric {x=(x :: (x' :: xs))} {y=[]} (NilIsSorted, isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), _) = absurdity @{uninhabitedIsPermutationOfConsNil} isPermutationOfXsYs
-    antisymmetric {x=[]} {y=[y]} (SingletonIsSorted, isPermutationOfXsYs) (NilIsSorted, isPermutationOfYsXs) = absurdity @{uninhabitedIsPermutationOfConsNil} isPermutationOfYsXs
-    antisymmetric {x=[x]} {y=[y]} (SingletonIsSorted, isPermutationOfXsYs) (SingletonIsSorted, _) = (SingletonPermutationIsIdentity isPermutationOfXsYs)
-    antisymmetric {x=(x :: (x' :: xs))} {y=[y]} (SingletonIsSorted, isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), _) = absurdity @{uninhabitedIsPermutationOfConsConsXsConsNil} isPermutationOfXsYs
-    antisymmetric {x=[]} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) (isSortedXs, isPermutationOfYsXs) = absurdity @{uninhabitedIsPermutationOfConsNil} isPermutationOfYsXs
-    antisymmetric {x=[x]} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) (isSortedXs, isPermutationOfYsXs) = absurdity @{uninhabitedIsPermutationOfConsConsXsConsNil} isPermutationOfYsXs
-    antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) with (decEq x y)
-      antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (Yes xEqY) =
-        let
-          allButX = PermutationOfCons $ replace
-            {p = \yyy => {anElement: a} -> {occurrenciesInOriginal, occurrenciesInPermutation: Nat} -> Occurs anElement occurrenciesInOriginal (x :: (x' :: xs)) -> Occurs anElement occurrenciesInPermutation (yyy::y'::ys) -> occurrenciesInOriginal = occurrenciesInPermutation}
-            (sym xEqY)
-            isPermutationOfXsYs
-          in cong2 Prelude.(::) xEqY $ antisymmetric @{antisymmetricIsSortingOf {lo=lo}} {rel = IsSortingOf {a=a} {rel=rel} {lo=lo}} (sortedY'Ys, allButX) (sortedX'Xs, symmetric @{symmetricIsPermutationOf} allButX)
-      antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) with (connex {rel=rel} @{%search} xNEqY)
-        antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) | (Left relXY) =
-          let
-            sortedYY'Ys : Sorted (y::y'::ys) = SeveralAreSorted relYY' sortedY'Ys
-            (_ ** timesXOccursInX'Xs) = countOccurrences x (x'::xs)
-            xInY'Ys : Occurs x (S _) (y'::ys) = NotHere (ElemOfPermutation isPermutationOfXsYs $ Here timesXOccursInX'Xs) xNEqY
-          in void $ xNEqY $ antisymmetric @{%search} relXY $  HeadIsInfimum sortedYY'Ys xInY'Ys
-        antisymmetric {x=(x :: (x' :: xs))} {y=(y :: (y' :: ys))} ((SeveralAreSorted relYY' sortedY'Ys), isPermutationOfXsYs) ((SeveralAreSorted relXX' sortedX'Xs), isPermutationOfYsXs) | (No xNEqY) | (Right relYX) =
-          let
-            sortedXX'Xs : Sorted (x::x'::xs) = SeveralAreSorted relXX' sortedX'Xs
-            (_ ** timesYOccursInY'Ys) = countOccurrences y (y'::ys)
-            yInX'Xs : Occurs y (S _) (x'::xs) = NotHere (ElemOfPermutation isPermutationOfYsXs $ Here timesYOccursInY'Ys) (\yEqX => xNEqY $ sym yEqX)
-          in void $ xNEqY $ antisymmetric @{%search} (HeadIsInfimum sortedXX'Xs yInX'Xs) relYX
+[antisymmetricIsSortingOf] (de: DecEq a) => (lo: LinearOrder a rel) => Antisymmetric (List a) (IsSortingOf @{lo}) where
+    antisymmetric isoXY isoYX = aiso x y isoXY isoYX
 
 lengthSuc : (xs : List a) -> (y : a) -> (ys : List a) ->
             length (xs ++ (y :: ys)) = S (length (xs ++ ys))
