@@ -1,6 +1,6 @@
 module Main
 
-import Sorted.List
+import Sorted.MergeSort
 import Sorted.Prop
 import Sorted.Perm
 import Sorted.Occurs
