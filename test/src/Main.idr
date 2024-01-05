@@ -1,12 +1,7 @@
 module Main
 
 import Sorted.MergeSort
-import Sorted.Prop
-import Sorted.Perm
-import Sorted.Occurs
-import Data.Vect
 import Data.Nat
-import Decidable.Equality
 
 main : IO ()
 main = do

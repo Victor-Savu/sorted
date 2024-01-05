@@ -1,4 +1,4 @@
-module Sorted.Perm
+module Sorted.IsPermutationOf
 
 import public Control.Relation
 import public Data.Nat

@@ -4,7 +4,7 @@ import Control.Relation
 import Decidable.Equality
 
 import Sorted.Occurs
-import Sorted.Perm
+import Sorted.IsPermutationOf
 
 %default total
 

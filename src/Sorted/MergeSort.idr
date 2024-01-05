@@ -13,7 +13,7 @@ import Data.Void
 import Decidable.Equality
 
 import public Sorted.Occurs
-import public Sorted.Perm
+import public Sorted.IsPermutationOf
 import public Sorted.Prop
 import public Sorted.Relates
 import public Sorted.Sorted

@@ -3,7 +3,7 @@ module Sorted.IsSortingOf
 import Control.Relation
 
 import Sorted.Occurs
-import Sorted.Perm
+import Sorted.IsPermutationOf
 import Sorted.Prop
 import Sorted.Relates
 import Sorted.Sorted
