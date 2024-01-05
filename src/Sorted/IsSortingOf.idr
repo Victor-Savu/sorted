@@ -16,14 +16,14 @@ public export
 IsSortingOf as = Sorted @{lo} && (as ~@~)
 
 public export
-[uninhabitedIsSortingOfEmptyCons] {0 a: Type} -> {0 rel: Rel a} -> {0 x:a} -> {0 xs: List a} -> DecEq a => (lo: LinearOrder a rel) => Uninhabited (IsSortingOf @{lo} [] (x::xs)) where
+[uninhabitedIsSortingOfEmptyCons] DecEq a => LinearOrder a rel => Uninhabited (IsSortingOf {rel=rel} [] (x::xs)) where
     uninhabited (_, isPermutationOfNilXXs) = absurdity @{uninhabitedIsPermutationOfNilCons} isPermutationOfNilXXs
 
 public export
-{0 a: Type} -> {0 rel: Rel a} -> DecEq a => (lo: LinearOrder a rel) => Transitive (List a) (IsSortingOf @{lo}) where
+DecEq a => LinearOrder a rel => Transitive (List a) (IsSortingOf {rel=rel}) where
     transitive (_, s) (w, t) = (w, transitive @{transitiveIsPermutationOf} s t)
 
-aiso : (de: DecEq a) => (lo: LinearOrder a rel) => (xs: List a) -> (ys: List a) -> (isoXY: IsSortingOf @{lo} xs ys) -> (isoYX : IsSortingOf @{lo} ys xs) -> xs = ys
+aiso : DecEq a => LinearOrder a rel => (xs: List a) -> (ys: List a) -> (isoXY: IsSortingOf {rel=rel} xs ys) -> (isoYX : IsSortingOf {rel=rel} ys xs) -> xs = ys
 aiso [] [] isoXY isoYX = Refl
 aiso [] (x :: xs) isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoXY
 aiso (x :: xs) [] isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoYX
@@ -45,5 +45,5 @@ aiso (x::xs) (y::ys) (sortedY, ipoXY) (sortedX, ipoYX) with (decEq x y)
     in cong2 (::) xEqY step
 
 public export
-[antisymmetricIsSortingOf] (de: DecEq a) => (lo: LinearOrder a rel) => Antisymmetric (List a) (IsSortingOf @{lo}) where
+[antisymmetricIsSortingOf] DecEq a => LinearOrder a rel => Antisymmetric (List a) (IsSortingOf {rel=rel}) where
     antisymmetric isoXY isoYX = aiso x y isoXY isoYX

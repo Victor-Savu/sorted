@@ -15,7 +15,7 @@ data Occurs : a -> Nat -> List a -> Type where
     Nowhere: Occurs occurrent 0 []
 
 public export
-OccursTheSameNumberOfTimes : {0 a: Type} -> {0 x: a} -> {0 m, n: Nat} -> {0 xs: List a} -> Occurs x m xs -> Occurs x n xs -> m = n
+OccursTheSameNumberOfTimes : Occurs x m xs -> Occurs x n xs -> m = n
 OccursTheSameNumberOfTimes Nowhere Nowhere = Refl
 OccursTheSameNumberOfTimes (There _ f) (Here _) = void $ f Refl
 OccursTheSameNumberOfTimes (There y _) (There z _) = OccursTheSameNumberOfTimes y z
@@ -24,15 +24,15 @@ OccursTheSameNumberOfTimes (Here pm) (Here pn) = cong S $ OccursTheSameNumberOfT
 OccursTheSameNumberOfTimes (Here _) (There _ f) = void $ f Refl
 
 public export
-[uninhabitedOccursAtLeastOnceInNil] {0 a: Type} -> {0 x: a} -> Uninhabited (Occurs x (S _) []) where
+[uninhabitedOccursAtLeastOnceInNil] Uninhabited (Occurs x (S _) []) where
   uninhabited Here impossible
 
 public export
-[uninhabitedOccursZeroTimesWhenHeadMatches] {0 a: Type} -> {0 x: a} -> {0 xs: List a} -> Uninhabited (Occurs x 0 (x::xs)) where
+[uninhabitedOccursZeroTimesWhenHeadMatches] Uninhabited (Occurs x 0 (x::xs)) where
   uninhabited (There _ f) = f Refl
 
 public export
-countOccurrences: {0 a: Type} -> DecEq a => (x: a) -> (l: List a) -> DPair Nat (\n => Occurs x n l)
+countOccurrences: DecEq a => (x: a) -> (l: List a) -> DPair Nat (\n => Occurs x n l)
 countOccurrences x [] = (0 ** Nowhere)
 countOccurrences x (y :: xs) with (countOccurrences x xs)
   countOccurrences x (y :: xs) | (f ** prf) with (decEq x y)
