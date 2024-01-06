@@ -16,9 +16,9 @@ infixr 4 -@->
 
 public export
 (-@->) : {x: a} -> {xs, ys: List a} -> RelatesToAll rel x xs -> (xs ~@~ ys) -> DecEq a => RelatesToAll rel x ys
-(-@->) f g y = let 
-    (_ ** gInXsPrf) = countOccurrences guest xs
-  in f $ replace {p = \arg => Occurs guest arg xs} (g gInXsPrf y) gInXsPrf
+(-@->) f (Ipo g) y = let 
+    (n' ** guestInXs) = countOccurrences guest xs
+  in f $ replace {p = \arg => Occurs guest arg xs} (g guestInXs ..=.. y) guestInXs
 
 public export
 (::) : {0 a: Type} -> {0 x, y: a} -> {0 xs: List a} -> {0 rel: Rel a} -> rel x y -> RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)

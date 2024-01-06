@@ -14,14 +14,16 @@ data Occurs : a -> Nat -> List a -> Type where
     ||| A proof that the element is not in the empty list
     Nowhere: Occurs occurrent 0 []
 
+infixr 4 ..=..
+
 public export
-OccursTheSameNumberOfTimes : Occurs x m xs -> Occurs x n xs -> m = n
-OccursTheSameNumberOfTimes Nowhere Nowhere = Refl
-OccursTheSameNumberOfTimes (There _ f) (Here _) = void $ f Refl
-OccursTheSameNumberOfTimes (There y _) (There z _) = OccursTheSameNumberOfTimes y z
-OccursTheSameNumberOfTimes (Here _) Nowhere impossible
-OccursTheSameNumberOfTimes (Here pm) (Here pn) = cong S $ OccursTheSameNumberOfTimes pm pn
-OccursTheSameNumberOfTimes (Here _) (There _ f) = void $ f Refl
+(..=..) : Occurs x m xs -> Occurs x n xs -> m = n
+Nowhere ..=.. Nowhere = Refl
+(There _ f) ..=.. (Here _) = void $ f Refl
+(There y _) ..=.. (There z _) = y ..=.. z
+(Here _) ..=.. Nowhere impossible
+(Here pm) ..=.. (Here pn) = cong S (pm ..=.. pn)
+(Here _) ..=.. (There _ f) = void $ f Refl
 
 public export
 [uninhabitedOccursAtLeastOnceInNil] Uninhabited (Occurs x (S _) []) where
