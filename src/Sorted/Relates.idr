@@ -8,37 +8,44 @@ import Sorted.IsPermutationOf
 
 %default total
 
+||| The type of proofs that a value relates to all the elements of a list.
 public export
 RelatesToAll : {a: Type} -> Rel a -> a -> List a -> Type
 RelatesToAll relates socialButterfly party = {guest: a} -> {n: Nat} -> Occurs guest (S n) party -> relates socialButterfly guest
 
 infixr 4 -@->
 
+||| If x relates to all the elements of xs , then it relates to any permutation ys of the elements of xs
 public export
 (-@->) : {x: a} -> {xs, ys: List a} -> RelatesToAll rel x xs -> (xs ~@~ ys) -> DecEq a => RelatesToAll rel x ys
 (-@->) f (Ipo g) y = let 
-    (n' ** guestInXs) = countOccurrences guest xs
+    (_ ** guestInXs) = countOccurrences guest xs
   in f $ replace {p = \arg => Occurs guest arg xs} (g guestInXs ..=.. y) guestInXs
 
+||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
 public export
 (::) : {0 a: Type} -> {0 x, y: a} -> {0 xs: List a} -> {0 rel: Rel a} -> rel x y -> RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
 (::) z f (Here x) = z
 (::) z f (There x g) = f x
 
+||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 public export
-relatesToTail : {x: a} -> RelatesToAll rel e (x::xs) -> DecEq a => RelatesToAll rel e xs
-relatesToTail {guest=victor} {n=m} f y with (decEq victor x)
-  relatesToTail {guest=victor} {n=m} f y | (Yes prf) = f $ rewrite sym prf in Here y
-  relatesToTail {guest=victor} {n=m} f y | (No contra) = f $ There y contra
+tail : {x: a} -> RelatesToAll rel e (x::xs) -> DecEq a => RelatesToAll rel e xs
+tail {guest=victor} {n=m} f y with (decEq victor x)
+  tail {guest=victor} {n=m} f y | (Yes prf) = f $ rewrite sym prf in Here y
+  tail {guest=victor} {n=m} f y | (No contra) = f $ There y contra
 
+||| [] is right-neutral with respect to ++. Ideally this should have been provided by the Semigroup implementation for List but
+||| the semigroup laws are not implemented.
 public export
-sameasitis : {xs: List a} -> xs ++ [] = xs
-sameasitis {xs = []} = Refl
-sameasitis {xs = (x :: xs)} = cong (x ::) $ sameasitis {xs=xs}
+plusNilRightNeutral : {xs: List a} -> xs ++ [] = xs
+plusNilRightNeutral {xs = []} = Refl
+plusNilRightNeutral {xs = (x :: xs)} = cong (x ::) $ plusNilRightNeutral {xs=xs}
 
+||| If e relates to all the elements in the list xs and to all the elements in the list ys then it relates to all the elements in the list xs++ys.
 public export
-(++) : {0 a: Type} -> {0 e: a} -> {0 rel: Rel a} -> {xs, ys: List a} -> RelatesToAll rel e xs -> RelatesToAll rel e ys -> DecEq a => RelatesToAll rel e (xs++ys)
+(++) : {xs, ys: List a} -> RelatesToAll rel e xs -> RelatesToAll rel e ys -> DecEq a => RelatesToAll rel e (xs++ys)
 (++) {xs = []} _ rYs x = rYs x
-(++) {xs = (y :: xs)} {ys = []} rXs _ x = rXs $ rewrite sym $ sameasitis {xs=y::xs} in x
+(++) {xs = (y :: xs)} {ys = []} rXs _ x = rXs $ rewrite sym $ plusNilRightNeutral {xs=y::xs} in x
 (++) {xs = (x'' :: xs)} {ys = (y :: ys)} rXs _ (Here x) = rXs $ Here $ snd $ (countOccurrences guest xs)
-(++) {xs = (x'' :: xs)} {ys = (y :: ys)} f g (There x f1) = (++) (relatesToTail {rel=rel} f) {rel=rel} g x
+(++) {xs = (x'' :: xs)} {ys = (y :: ys)} f g (There x f1) = (tail {rel=rel} f ++ g ) {rel=rel} x

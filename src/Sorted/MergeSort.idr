@@ -21,6 +21,7 @@ import public Sorted.IsSortingOf
 
 %default total
 
+-- Helper functions for proving termination
 
 lengthSuc : (xs : List a) -> (y : a) -> (ys : List a) ->
             length (xs ++ (y :: ys)) = S (length (xs ++ ys))
@@ -47,11 +48,12 @@ smallerMerge xs y ys = LTESucc $ replace {p = \arg => LTE arg (length (xs ++ (y:
 
 -- The sorting of a list starts with the minimum element. The If we have a sorting 
 
-merge' : LinearOrder a rel => {left, right: List a} -> (left': (List a) # (IsSortingOf {rel=rel}  left)) -> (right': (List a) # (IsSortingOf {rel=rel}  right)) -> DecEq a => (List a) # (IsSortingOf {rel=rel} (left ++ right))
+||| Mergig the sorting of left and right produces the sorting of left ++ right
+merge' : LinearOrder a rel => {left, right: List a} -> (left': (List a) # (IsSortingOf rel  left)) -> (right': (List a) # (IsSortingOf rel  right)) -> DecEq a => (List a) # (IsSortingOf rel (left ++ right))
 merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (sizeAccessible (sortedLeft ++ sortedRight))
   merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
   merge' {left = []} {right = right} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = (sortedRight # isSortingOfRight)
-  merge' {left = (w :: xs1)} {right = []} (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = rewrite sameasitis {xs=(w::xs1)} in (sortedLeft # isSortingOfLeft)
+  merge' {left = (w :: xs1)} {right = []} (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = rewrite plusNilRightNeutral {xs=(w::xs1)} in (sortedLeft # isSortingOfLeft)
   merge' {left = (w :: xs1)} {right = (v :: ys1)} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfLeft
   merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ([] # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd isSortingOfRight
   merge' {left = (w :: xs1)} {right = (v :: ys1)} ((minLeft :: tailSortedLeft) # isSortingOfLeft) ((minRight::tailSortedRight) # isSortingOfRight) | Access acc =
@@ -86,7 +88,7 @@ merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (siz
                 (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
                 abc = minLeft::(Ipo mergeIsPermutationOfSum)
                 cde = snd isSortingOfLeft ++ snd isSortingOfRight
-              in (SeveralAreSorted (ml_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+              in ((ml_rel_merged $ Here mhInMergedTPrf) :@: mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
           )
       (Right rel_r_l) =>
         let
@@ -114,15 +116,17 @@ merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (siz
                 (mhInMergedT ** mhInMergedTPrf) = countOccurrences mergedH mergedT
                 abc = symmetric @{symmetricIsPermutationOf} $ AdditionOfPermutationsCommutes {xs=minRight::tailSortedRight} (minRight::(AdditionOfPermutationsCommutes {xs=minLeft::tailSortedLeft} $ symmetric @{symmetricIsPermutationOf} $ Ipo mergeIsPermutationOfSum))
                 cde = snd isSortingOfLeft ++ snd isSortingOfRight
-              in (SeveralAreSorted (mr_rel_merged $ Here mhInMergedTPrf) mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
+              in ((mr_rel_merged $ Here mhInMergedTPrf) :@: mergeIsSorted, transitive @{transitiveIsPermutationOf} cde abc)
           )
 
+||| Sort a list in accordance to the linear order induced by rel.
+||| This is an implementation of the merge sort algorithm.
 public export
-mergeSort : (as: List a) ->  DecEq a => LinearOrder a rel => (List a) # (IsSortingOf {rel=rel} as)
+mergeSort : (as: List a) ->  DecEq a => LinearOrder a rel => (List a) # (IsSortingOf rel as)
 mergeSort as with (sizeAccessible as)
   mergeSort as | acc with (split as)
-    mergeSort [] | acc | SplitNil = [] # (NilIsSorted,  reflexive @{reflexiveIsPermutationOf})
-    mergeSort [x] | acc | (SplitOne x) = [x] # (SingletonIsSorted, reflexive @{reflexiveIsPermutationOf})
+    mergeSort [] | acc | SplitNil = [] # (Nil,  reflexive @{reflexiveIsPermutationOf})
+    mergeSort [x] | acc | (SplitOne x) = [x] # (Singleton, reflexive @{reflexiveIsPermutationOf})
     mergeSort (x :: (xs ++ (y :: ys))) | Access acc | (SplitPair x xs y ys) with (mergeSort {rel=rel} (x::xs) | acc _ (smallerLeft xs y ys))
       mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ([] # cantBe ) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd cantBe
       mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) with (mergeSort {rel=rel} (y::ys) | acc _ (smallerRight xs ys))

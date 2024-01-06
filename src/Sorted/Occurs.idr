@@ -16,6 +16,7 @@ data Occurs : a -> Nat -> List a -> Type where
 
 infixr 4 ..=..
 
+||| If an element occurs in a list the same number of times no matter how you count it.
 public export
 (..=..) : Occurs x m xs -> Occurs x n xs -> m = n
 Nowhere ..=.. Nowhere = Refl
@@ -33,6 +34,7 @@ public export
 [uninhabitedOccursZeroTimesWhenHeadMatches] Uninhabited (Occurs x 0 (x::xs)) where
   uninhabited (There _ f) = f Refl
 
+||| Count the number of times a value occurs in a list.
 public export
 countOccurrences: DecEq a => (x: a) -> (l: List a) -> DPair Nat (\n => Occurs x n l)
 countOccurrences x [] = (0 ** Nowhere)
@@ -42,13 +44,9 @@ countOccurrences x (y :: xs) with (countOccurrences x xs)
     countOccurrences x (y :: xs) | (f ** prf) | (No contra) = (f ** There prf contra)
 
 public export
-(::) : (x: a) -> Occurs x n xs -> Occurs x (S n) (x::xs)
-(::) _ y = Here y
-
-public export
 tail : Occurs x (S n) (x::xs) -> Occurs x n xs
 tail (Here y) = y
-tail (There y f) = void $ f Refl
+tail (There _ f) = void $ f Refl
 
 public export
 (+) : Occurs x n xs -> Occurs x m ys -> Occurs x (n+m) (xs++ys)
