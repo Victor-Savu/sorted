@@ -107,7 +107,7 @@ public export
         (py + pt)
 
 public export
-(::) : {0 xs, ys: List a} -> (x: a) -> xs ~@~ ys -> DecEq a => x::xs ~@~ x::ys
+(::) : {0 xs, ys: List a} -> (x: a) -> xs ~@~ ys -> x::xs ~@~ x::ys
 (::) x (Ipo occ) = Ipo occ_xxs_xys where
     occ_xxs_xys : {e: a} -> Occurs e n (x :: xs) -> Occurs e n (x :: ys)
     occ_xxs_xys (Here y) = Here (occ y)

@@ -13,18 +13,18 @@ import Sorted.Sorted
 ||| sorted is a sorting of scrambled according to the ordering induced by rel if
 ||| sorted is both sorted and it is a permutation of scrambled.
 public export
-0 IsSortingOf : Rel a -> Rel (List a)
-IsSortingOf rel scrambled sorted = (sorted -=@ rel, scrambled ~@~ sorted)
+0 IsSortingOf : LinearOrder a rel -> Rel (List a)
+IsSortingOf lo scrambled sorted = (sorted -=@ lo, scrambled ~@~ sorted)
 
 public export
-[uninhabitedIsSortingOfEmptyCons] Uninhabited (IsSortingOf rel [] (x::xs)) where
+[uninhabitedIsSortingOfEmptyCons] Uninhabited (IsSortingOf lo [] (x::xs)) where
     uninhabited (_, isPermutationOfNilXXs) = absurdity @{uninhabitedIsPermutationOfNilCons} isPermutationOfNilXXs
 
 public export
-DecEq a => Transitive (List a) (IsSortingOf rel) where
+DecEq a => Transitive (List a) (IsSortingOf lo) where
     transitive (_, s) (w, t) = (w, transitive @{transitiveIsPermutationOf} s t)
 
-aiso : DecEq a => LinearOrder a rel => (xs: List a) -> (ys: List a) -> (isoXY: IsSortingOf rel xs ys) -> (isoYX : IsSortingOf rel ys xs) -> xs = ys
+aiso : DecEq a => (xs: List a) -> (ys: List a) -> (lo: LinearOrder a rel) => (isoXY: IsSortingOf lo xs ys) -> (isoYX : IsSortingOf lo ys xs) -> xs = ys
 aiso [] [] isoXY isoYX = Refl
 aiso [] (x :: xs) isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoXY
 aiso (x :: xs) [] isoXY isoYX = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isoYX
@@ -46,5 +46,5 @@ aiso (x::xs) (y::ys) (sortedY, ipoXY) (sortedX, ipoYX) with (decEq x y)
     in cong2 (::) xEqY step
 
 public export
-[antisymmetricIsSortingOf] DecEq a => LinearOrder a rel => Antisymmetric (List a) (IsSortingOf rel) where
+[antisymmetricIsSortingOf] DecEq a => (lo: LinearOrder a rel) => Antisymmetric (List a) (IsSortingOf lo) where
     antisymmetric isoXY isoYX = aiso x y isoXY isoYX

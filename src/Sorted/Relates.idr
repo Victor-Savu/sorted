@@ -35,6 +35,11 @@ tail {guest=victor} {n=m} f y with (decEq victor x)
   tail {guest=victor} {n=m} f y | (Yes prf) = f $ rewrite sym prf in Here y
   tail {guest=victor} {n=m} f y | (No contra) = f $ There y contra
 
+||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
+public export
+head : {x: a} -> {xs: List a} -> RelatesToAll rel e (x::xs) -> DecEq a => rel e x
+head r2a = r2a $ Here $ snd $ countOccurrences x xs
+
 ||| [] is right-neutral with respect to ++. Ideally this should have been provided by the Semigroup implementation for List but
 ||| the semigroup laws are not implemented.
 public export

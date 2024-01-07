@@ -49,7 +49,7 @@ smallerMerge xs y ys = LTESucc $ replace {p = \arg => LTE arg (length (xs ++ (y:
 -- The sorting of a list starts with the minimum element. The If we have a sorting 
 
 ||| Mergig the sorting of left and right produces the sorting of left ++ right
-merge' : LinearOrder a rel => {left, right: List a} -> (left': (List a) # (IsSortingOf rel  left)) -> (right': (List a) # (IsSortingOf rel  right)) -> DecEq a => (List a) # (IsSortingOf rel (left ++ right))
+merge' : (lo: LinearOrder a rel) => {left, right: List a} -> (left': (List a) # (IsSortingOf lo  left)) -> (right': (List a) # (IsSortingOf lo  right)) -> DecEq a => (List a) # (IsSortingOf lo (left ++ right))
 merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (sizeAccessible (sortedLeft ++ sortedRight))
   merge' {left = []} {right = right} ((w :: xs1) # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = absurdity @{uninhabitedIsPermutationOfNilCons} $ snd isSortingOfLeft
   merge' {left = []} {right = right} ([] # isSortingOfLeft) (sortedRight # isSortingOfRight) | acc = (sortedRight # isSortingOfRight)
@@ -122,13 +122,13 @@ merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (siz
 ||| Sort a list in accordance to the linear order induced by rel.
 ||| This is an implementation of the merge sort algorithm.
 public export
-mergeSort : (as: List a) ->  DecEq a => LinearOrder a rel => (List a) # (IsSortingOf rel as)
+mergeSort : (as: List a) ->  DecEq a => (lo: LinearOrder a rel) => (List a) # (IsSortingOf lo as)
 mergeSort as with (sizeAccessible as)
   mergeSort as | acc with (split as)
     mergeSort [] | acc | SplitNil = [] # (Nil,  reflexive @{reflexiveIsPermutationOf})
     mergeSort [x] | acc | (SplitOne x) = [x] # (Singleton, reflexive @{reflexiveIsPermutationOf})
-    mergeSort (x :: (xs ++ (y :: ys))) | Access acc | (SplitPair x xs y ys) with (mergeSort {rel=rel} (x::xs) | acc _ (smallerLeft xs y ys))
+    mergeSort (x :: (xs ++ (y :: ys))) | Access acc | (SplitPair x xs y ys) with (mergeSort (x::xs) | acc _ (smallerLeft xs y ys))
       mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ([] # cantBe ) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd cantBe
-      mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) with (mergeSort {rel=rel} (y::ys) | acc _ (smallerRight xs ys))
+      mergeSort (x :: (xs ++ (y :: ys))) | (Access acc) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) with (mergeSort (y::ys) | acc _ (smallerRight xs ys))
         mergeSort (x :: (xs ++ (y :: ys))) | (Access rec) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) | ([] # cantBe) = absurdity @{uninhabitedIsPermutationOfConsNil} $ snd cantBe
         mergeSort (x :: (xs ++ (y :: ys))) | (Access rec) | (SplitPair x xs y ys) | ((z :: zs) # prfZs) | ((z' :: zs') # prfZs') = merge' ((z :: zs) # prfZs) ((z' :: zs') # prfZs')
