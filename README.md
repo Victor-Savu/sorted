@@ -8,7 +8,7 @@ For a sorting algorithm to be correct, it must take in a list and a relation tha
 
 - [x] Merge Sort
 - [ ] Bubble Sort
-- [ ] Insertion Sort
+- [x] Insertion Sort
 - [ ] Heap Sort
 - [ ] Bucket Sort
 - [ ] Quick Sort

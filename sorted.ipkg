@@ -16,7 +16,7 @@ authors = "Victor-Nicolae Savu"
 depends = linear, contrib
 
 -- modules to install
-modules = Sorted, Sorted.Prop, Sorted.MergeSort, Sorted.Occurs, Sorted.IsPermutationOf, Sorted.Relates, Sorted.Sorted, Sorted.IsSortingOf
+modules = Sorted, Sorted.Prop, Sorted.MergeSort, Sorted.Occurs, Sorted.IsPermutationOf, Sorted.Relates, Sorted.Sorted, Sorted.IsSortingOf, Sorted.InsertionSort
 
 -- main file (i.e. file to load at REPL)
 -- main =
