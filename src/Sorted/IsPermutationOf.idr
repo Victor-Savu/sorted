@@ -72,13 +72,13 @@ SingletonPermutationIsIdentity (Ipo occ) with (decEq x y)
 
 public export
 PermutationOfCons : {x: a} -> {0 xs, ys: List a} -> DecEq a => x::xs ~@~ x::ys ->  xs ~@~ ys
-PermutationOfCons (Ipo occ) = Ipo help_1 where
-    help_1 : {e: a} -> Occurs e m xs -> Occurs e m ys
-    help_1 eInXs with (decEq x e)
-      help_1 eInXs | (Yes Refl) = case occ $ Here $ eInXs of
+PermutationOfCons (Ipo occ) = Ipo occ_xs_ys where
+    occ_xs_ys : {e: a} -> Occurs e m xs -> Occurs e m ys
+    occ_xs_ys eInXs with (decEq x e)
+      occ_xs_ys eInXs | (Yes Refl) = case occ $ Here $ eInXs of
         (Here y) => y
         (There y f) => void $ f Refl
-      help_1 eInXs | (No contra) = case occ $ There eInXs (contra . \shoo => sym shoo) of
+      occ_xs_ys eInXs | (No contra) = case occ $ There eInXs (contra . \shoo => sym shoo) of
         (Here y) => void $ contra Refl
         (There y f) => y
 
