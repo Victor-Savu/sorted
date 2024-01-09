@@ -25,7 +25,8 @@ modules =
     Sorted.Relates,
     Sorted.Sorted,
     Sorted.IsSortingOf,
-    Sorted.InsertionSort
+    Sorted.InsertionSort,
+    Sorted.Heap
 
 -- main file (i.e. file to load at REPL)
 -- main =
