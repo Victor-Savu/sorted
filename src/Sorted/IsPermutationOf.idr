@@ -63,6 +63,11 @@ public export
           occ_x_y eInY | (_ ** eInX) | Refl = eInX
 
 public export
+PermutationOfNilIsNil : {xs: List a} -> [] ~@~ xs -> DecEq a => xs = []
+PermutationOfNilIsNil {xs = []} (Ipo occ) = Refl
+PermutationOfNilIsNil {xs = (x :: xs)} (Ipo occ) = absurdity $ Here (snd $ countOccurrences x xs) ..=.. occ Nowhere
+
+public export
 SingletonPermutationIsIdentity : {x, y: a} -> DecEq a => [x] ~@~ [y] -> [x] = [y]
 SingletonPermutationIsIdentity (Ipo occ) with (decEq x y)
   SingletonPermutationIsIdentity (Ipo occ) | (Yes prf) = cong (\e => [e]) prf
@@ -105,6 +110,10 @@ public export
       in replace {p = \q => Occurs e q (y ++ t)}
         ((cong2 (+) (py ..=.. occ_x_y px) (pt ..=.. occ_z_t pz)) `transitive` ((px + pz) ..=.. e_in_xz))
         (py + pt)
+
+public export
+Nil : IsPermutationOf [] []
+Nil = Ipo id
 
 public export
 (::) : {0 xs, ys: List a} -> (x: a) -> xs ~@~ ys -> x::xs ~@~ x::ys

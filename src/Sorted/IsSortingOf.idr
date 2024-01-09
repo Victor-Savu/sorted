@@ -6,7 +6,7 @@ import Sorted.Occurs
 import Sorted.IsPermutationOf
 import Sorted.Prop
 import Sorted.Relates
-import Sorted.Sorted
+import public Sorted.Sorted
 
 %default total
 

@@ -22,9 +22,15 @@ public export
     (_ ** guestInXs) = countOccurrences guest xs
   in f $ replace {p = \arg => Occurs guest arg xs} (g guestInXs ..=.. y) guestInXs
 
+public export
+Nil : RelatesToAll rel x []
+[] (Here _) impossible
+[] (There _ _) impossible
+[] Nowhere impossible
+
 ||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
 public export
-(::) : {0 a: Type} -> {0 x, y: a} -> {0 xs: List a} -> {0 rel: Rel a} -> rel x y -> RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
+(::) : {0 rel: Rel a} -> rel x y -> RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
 (::) z f (Here x) = z
 (::) z f (There x g) = f x
 
