@@ -18,15 +18,16 @@ depends = linear, contrib
 -- modules to install
 modules =
     Sorted,
-    Sorted.Prop,
+    Sorted.Container,
+    Sorted.Heap,
+    Sorted.InsertionSort,
+    Sorted.IsPermutationOf,
+    Sorted.IsSortingOf,
     Sorted.MergeSort,
     Sorted.Occurs,
-    Sorted.IsPermutationOf,
+    Sorted.Prop,
     Sorted.Relates,
-    Sorted.Sorted,
-    Sorted.IsSortingOf,
-    Sorted.InsertionSort,
-    Sorted.Heap
+    Sorted.Sorted
 
 -- main file (i.e. file to load at REPL)
 -- main =
