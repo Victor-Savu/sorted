@@ -37,15 +37,14 @@ DecEq a =>  Container a List where
     ConsBiinjective = MkBiinjective impl where
         impl : {x: a} -> {xs, ys: List a} -> Container.(::) x xs = Container.(::) y ys -> (x = y, xs = ys)
         impl Refl = (Refl, Refl)
-   
-    -- ConsSize x [] = ?helpme_0 where
-    --   size0 : size @{szd} [] = 0
-    --   size0 = ?size0_rhs  
-    -- ConsSize x (y :: xs) = ?helpme_1
 
     xs ++ ys = xs ++ ys
     ConcNilLeftNeutral xs = Refl
     ConcReduces x xs ys = Refl
+
+    ContainerSized = MkSized length
+    SizedNil = Refl
+    SizedCons = Refl
 
     Match [] = Left Refl
     Match (x :: xs) = Right ((x, xs) # Refl)

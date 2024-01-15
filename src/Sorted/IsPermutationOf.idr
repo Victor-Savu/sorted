@@ -83,3 +83,11 @@ tail (Ipo occ) = Ipo occ' where
     occ' e with (decEq e x)
       occ' _ | (Yes Refl) = injective $ (ConsAddsOne x xs `transitive` occ x) `transitive` (sym $ ConsAddsOne x ys)
       occ' e | (No eNEqX) = (ConsKeepsRest x xs e eNEqX `transitive` occ e) `transitive` (sym $ ConsKeepsRest x ys e eNEqX)
+
+public export
+0 swapIsPermutation : {x,y: a} -> DecEq a => Container a c => (e: a) -> e .#. (Container.(::) {c} x (Container.(::) y Container.Nil)) = e .#. (Container.(::) {c} y (Container.(::) x Container.Nil))
+swapIsPermutation e with (decEq e x, decEq e y)
+  swapIsPermutation e | ((Yes Refl), Yes Refl) = Refl
+  swapIsPermutation e | ((Yes Refl), No eNEqY) = sym ((cong S $ ConsKeepsRest {c} y [] e eNEqY) `transitive` (ConsAddsOne {c} e [y])) `transitive` (ConsAddsOne {c} e [] `transitive` (ConsKeepsRest {c} y [e] e eNEqY))
+  swapIsPermutation e | ((No eNEqX), Yes Refl) = sym (ConsKeepsRest {c} x [e] e eNEqX) `transitive` ((sym (ConsAddsOne {c} e []) `transitive` (cong S (ConsKeepsRest {c} x [] e eNEqX))) `transitive` ConsAddsOne {c} e [x])
+  swapIsPermutation e | ((No eNEqX), No eNEqY) = sym ((sym $ NilIsEmpty {c} e) `transitive` (ConsKeepsRest {c} y [] e eNEqY `transitive` (ConsKeepsRest {c} x [y] e eNEqX))) `transitive` ((sym (NilIsEmpty {c} e) `transitive` (ConsKeepsRest {c} x [] e eNEqX)) `transitive` ConsKeepsRest {c} y [x] e eNEqY)

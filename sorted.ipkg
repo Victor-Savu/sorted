@@ -19,12 +19,12 @@ depends = linear, contrib
 modules =
     Sorted,
     Sorted.Container,
-    Sorted.Heap,
-    Sorted.InsertionSort,
+    -- Sorted.Heap,
+    -- Sorted.InsertionSort,
     Sorted.IsPermutationOf,
     Sorted.IsSortingOf,
-    Sorted.MergeSort,
-    Sorted.Occurs,
+    -- Sorted.MergeSort,
+    -- Sorted.Occurs,
     Sorted.Prop,
     Sorted.Relates,
     Sorted.Sorted
@@ -34,7 +34,7 @@ modules =
 
 -- name of executable
 -- executable =
--- opts =
+opts = "--inc chez --profile --timing 1"
 sourcedir = "src"
 -- builddir =
 -- outputdir =

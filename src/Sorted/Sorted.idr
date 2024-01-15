@@ -52,16 +52,16 @@ public export
 public export
 0 tail : {x': a} -> {xs', ys': c a} -> (lo: LinearOrder a rel) => (ct: Container a c) => {ysIsCons: x'::xs' = ys'} ->  (Sorted @{lo} @{ct} {rel} {c} {a} ys') -> (Sorted @{lo} @{ct} {c} {a} {rel} xs')
 tail [] = absurdity @{uninhabitedConsIsNil} ysIsCons
-tail (Singleton y) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a} y} ysIsCons) []
-tail (relXY :@: sortedYYs) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}  x'} ysIsCons) sortedYYs
+tail (Singleton y) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) []
+tail (relXY :@: sortedYYs) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) sortedYYs
 
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
 covering
 public export
 0 head : {rel: a->a->Type} -> {x: a} -> {xs, ys: c a} -> (lo: LinearOrder a rel) => (ct: Container a c) => DecEq a => {ysIsCons: x::xs = ys} -> Sorted @{lo} ys -> RelatesToAll @{ct} rel x xs
 head [] _ = absurdity @{uninhabitedConsIsNil} ysIsCons
-head (Singleton y) prf = void $ SIsNotZ $ (sym prf) `transitive` ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a} x} ysIsCons) `transitive` (NilIsEmpty guest))
-head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective @{ct} {c} {a} x} ysIsCons)
+head (Singleton y) prf = void $ SIsNotZ $ (sym prf) `transitive` ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) `transitive` (NilIsEmpty guest))
+head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons)
   head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) with (decEq guest y)
     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (Yes Refl) = relXY
     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (No guestNEqY) = relXY `transitive` (head {x=y} {xs=ys} {ys=y::ys} {ysIsCons=Refl} sortedYYs (ConsKeepsRest y ys guest guestNEqY `transitive` prf))
