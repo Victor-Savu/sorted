@@ -1,8 +1,11 @@
 module Sorted.Container
 
+import public Control.Relation
+import Data.Void
+import Data.Nat
 import Decidable.Equality
 
-import Sorted.Prop
+import public Sorted.Prop
 
 infixr 9 .#.
 
@@ -24,23 +27,58 @@ infixr 9 .#.
 |||    2. Given any other element of a (call it x'), that element will occur the same number of times in xs as it does in xxs (showing that no other
 |||       element of xs was duplicated or removed by (::))
 public export
-interface Container a c where
+interface Container a (0 c: Type -> Type) | c where
+    constructor MkContainer
+
     (.#.) : a -> c a -> Nat
-    Nil : c a # (\xs => (0 x: a) -> x .#. xs = 0)
-    (::) : (x: a) -> (xs : c a) -> c a # (\xxs => ((1 + x .#. xs) = x .#. xxs, (0 x': a) -> (0_: Not (x'=x)) -> x' .#. xs =  x' .#. xxs))
-    (++) : (xs: c a) -> (ys: c a) -> c a # (\xys => (x: a) -> x .#. xys = x .#. xs + x .#. ys)
+
+    Nil : c a
+    0 NilIsEmpty : (x: a) -> x .#. [] = 0
+    0 NilIsUnique : (xs: c a) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
+
+    (::) : a -> c a -> c a
+    0 ConsAddsOne : (x: a) -> (xs : c a) -> (1 + x .#. xs) = x .#. (x :: xs)
+    0 ConsKeepsRest : (x: a) -> (xs : c a) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
+    0 ConsBiinjective : (x: a) -> Biinjective (::)
+
+    (++) : (xs: c a) -> (ys: c a) -> c a
+    0 ConcMerges : (xs: c a) -> (ys: c a) -> (x: a) -> x .#. (xs ++ ys) = x .#. xs + x .#. ys
+    0 ConcNilRightNeutral : (xs: c a) -> xs ++ [] = xs
+
+export
+[uninhabitedConsIsNil] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited (x::xs = []) where
+   uninhabited xXsIsNil = absurdity $ transitive (ConsAddsOne x xs) $ transitive (cong (x .#.) xXsIsNil) (NilIsEmpty x)
+
+headIsSame : {x, y: a} -> {xs, ys: c a} -> DecEq a => Container a c => x::xs = y::ys -> x = y
+headIsSame prf with (decEq x y)
+  headIsSame prf | (Yes Refl) = Refl
+  headIsSame prf | (No xNEqY) = ?headIsSame_rhs_rhss_1
 
 -- Implementation for List
 
+public export
 yes : DecEq a => (x: a) -> decEq x x = Yes Refl
 yes x with (decEq x x)
   yes x | (Yes Refl) = Refl
   yes x | (No xNEqX) = void $ xNEqX Refl
 
+public export
 no : DecEq a => {x, x': a} -> (xNEqX': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
 no xNEqX' with (decEq x x')
   no x'NEqX' | (Yes Refl) = void $ x'NEqX' Refl
   no _ | (No xNEqX') = xNEqX' # Refl
+
+
+0 Next : {x: a} -> {xs: c a} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
+Next prf = (sym $ ConsAddsOne x xs) `transitive` (cong S prf)
+
+public export
+ford : (0 _: a = b) -> a -> b
+ford Refl = id
+
+predec : {x: Nat} -> Not (x = 0) -> Nat # (\pred => x = S pred)
+predec {x = 0} f = void $ f Refl
+predec {x = (S k)} f = k # Refl
 
 public export
 DecEq a =>  Container a List where
@@ -49,11 +87,28 @@ DecEq a =>  Container a List where
         x .#. (x :: xs) | (Yes Refl) = 1 + x .#. xs
         x .#. (x' :: xs) | (No _) = x .#. xs
 
-    [] = [] # \_ => Refl
-    x :: xs = x::xs # (rewrite yes x in Refl, \x' => \x'NEqX => let _ # p = no x'NEqX in rewrite p in Refl)
-    xs ++ ys = xs ++ ys # \x => prf x xs ys where
-        prf : (x:a) -> (xs: List a) -> (ys: List a) -> x .#. (xs ++ ys) = (x .#. xs) + (x .#. ys)
-        prf x [] ys = Refl
-        prf x (y :: xs) ys with (decEq x y)
-          prf x (x :: xs) ys | (Yes Refl) = cong S $ prf x xs ys
-          prf x (y :: xs) ys | (No contra) = prf x xs ys
+    [] = []
+    NilIsEmpty x = Refl
+    NilIsUnique [] uniq = Refl
+    NilIsUnique (x :: xs) uniq  with (decEq (x .#. xs) 0)
+      NilIsUnique (x :: xs) uniq | Yes yes0 = void $ SIsNotZ $ (uniq {m=1} x) (rewrite yes x in rewrite yes0 in rewrite sym (Next {c=List} {a} yes0) in Refl)
+      NilIsUnique (x :: xs) uniq | No not0 =
+        let
+          n # pdk = predec not0
+        in void $ SIsNotZ $ uniq {m=S (x .#. xs)} x $ rewrite ConsAddsOne x xs in rewrite yes x in rewrite cong S $ (plusZeroLeftNeutral $ x .#. xs) in rewrite cong S pdk in rewrite sym (Next {c=List} {a} pdk) in Refl 
+
+    x :: xs = x::xs
+    ConsAddsOne x xs = rewrite yes x in Refl
+    ConsKeepsRest x xs x' x'NEqX = let _ # p = no x'NEqX in rewrite p in Refl
+    ConsBiinjective x = MkBiinjective ?impls where
+        impl : {xs, ys: List a} -> Container.(::) x xs = Container.(::) y ys -> (x = y, xs = ys)
+        impl Refl = (Refl, Refl)
+
+    xs ++ ys = xs ++ ys
+    ConcMerges [] ys x = Refl
+    ConcMerges (y :: xs) ys x with (decEq x y)
+      ConcMerges (x :: xs) ys x | (Yes Refl) = cong S $ ConcMerges xs ys x
+      ConcMerges (y :: xs) ys x | (No contra) = ConcMerges xs ys x
+    
+    ConcNilRightNeutral [] = Refl
+    ConcNilRightNeutral (x :: xs) = cong (x ::) (ConcNilRightNeutral xs)
