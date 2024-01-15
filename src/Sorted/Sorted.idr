@@ -35,33 +35,32 @@ data Sorted: (lo: LinearOrder a rel) => (ct: Container a c) => c a -> Type where
 
 ||| If x relates to all the elements of xs and xs is sorted with respect to the linear order induced by rel,
 ||| then x::xs is also sorted with respect to the same linear order.
-public export
-0 (::) : DecEq a => (lo: LinearOrder a rel) => RelatesToAll @{ct} rel x xs -> Sorted @{lo} @{ct} xs -> Sorted @{lo} @{ct} ((x::xs) @{ct})
+export
+0 (::) : DecEq a => LinearOrder a rel => Container a c => RelatesToAll {c} rel x xs -> Sorted {c} {rel} xs -> Sorted {c} {rel} ((x::xs) {c})
 (::) f [] = Singleton x
 (::) f (Singleton {x=x'}) = (f $ sym (ConsAddsOne x' Container.Nil) `transitive` (cong S $ NilIsEmpty x')) :@: Singleton x'
-(::) f ((relX'Y :@: sortedYYs) {x=x'} {ys} {y}) = (f $ sym $ ConsAddsOne @{ct} x' (y::ys)) :@: relX'Y :@: sortedYYs
+(::) f ((relX'Y :@: sortedYYs) {x=x'} {ys} {y}) = (f $ sym $ ConsAddsOne x' (y::ys)) :@: relX'Y :@: sortedYYs
 
 infixr 4 -=@
 
 ||| An alternative notation for a sorted list
-public export
+export
 (-=@) : LinearOrder a rel => Container a c => c a -> Type
 (-=@) xs = Sorted {rel} xs
 
 ||| The tail of a sorted list is also a sorted list.
-public export
-0 tail : {x': a} -> {xs', ys': c a} -> (lo: LinearOrder a rel) => (ct: Container a c) => {ysIsCons: x'::xs' = ys'} ->  (Sorted @{lo} @{ct} {rel} {c} {a} ys') -> (Sorted @{lo} @{ct} {c} {a} {rel} xs')
+export
+0 tail : {x': a} -> {xs', ys': c a} -> LinearOrder a rel => Container a c => {ysIsCons: x'::xs' = ys'} -> (Sorted {rel} {c} ys') -> (Sorted {c} {rel} xs')
 tail [] = absurdity @{uninhabitedConsIsNil} ysIsCons
-tail (Singleton y) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) []
-tail (relXY :@: sortedYYs) = replace {p = \q => Sorted @{lo} @{ct} q} (sym $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) sortedYYs
+tail (Singleton y) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) []
+tail (relXY :@: sortedYYs) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) sortedYYs
 
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
-covering
-public export
-0 head : {rel: a->a->Type} -> {x: a} -> {xs, ys: c a} -> (lo: LinearOrder a rel) => (ct: Container a c) => DecEq a => {ysIsCons: x::xs = ys} -> Sorted @{lo} ys -> RelatesToAll @{ct} rel x xs
+export
+0 head : {x: a} -> {xs, ys: c a} -> LinearOrder a rel => Container a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
 head [] _ = absurdity @{uninhabitedConsIsNil} ysIsCons
-head (Singleton y) prf = void $ SIsNotZ $ (sym prf) `transitive` ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons) `transitive` (NilIsEmpty guest))
-head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective @{ct} {c} {a}} ysIsCons)
+head (Singleton y) prf = void $ SIsNotZ $ (sym prf) `transitive` ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) `transitive` (NilIsEmpty guest))
+head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective {c}} ysIsCons)
   head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) with (decEq guest y)
     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (Yes Refl) = relXY
     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (No guestNEqY) = relXY `transitive` (head {x=y} {xs=ys} {ys=y::ys} {ysIsCons=Refl} sortedYYs (ConsKeepsRest y ys guest guestNEqY `transitive` prf))

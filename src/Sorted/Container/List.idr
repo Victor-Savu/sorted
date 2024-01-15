@@ -14,7 +14,7 @@ predec : {x: Nat} -> Not (x = 0) -> Nat # (\pred => x = S pred)
 predec {x = 0} f = void $ f Refl
 predec {x = (S k)} f = k # Refl
 
-public export
+export
 DecEq a =>  Container a List where
     x .#. [] = 0
     x .#. (x' :: xs) with (decEq x x')

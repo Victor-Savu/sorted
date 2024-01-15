@@ -17,7 +17,7 @@ RelatesToAll relates socialButterfly party = {guest: a} -> {n: Nat} -> guest .#.
 infixr 4 -@->
 
 ||| If x relates to all the elements of xs , then it relates to any permutation ys of the elements of xs
-public export
+export
 (-@->) : {x: a} -> {xs, ys: c a} -> Container a c => RelatesToAll rel x xs -> (xs ~@~ ys) -> DecEq a => RelatesToAll rel x ys
 (-@->) f (Ipo g) y = f (g guest `transitive` y)
 
@@ -26,27 +26,27 @@ public export
 %hide Prelude.Nil
 %hide Stream.(::)
 
-public export
+export
 0 Nil : {0 x: a} -> Container a c => RelatesToAll {c} rel x Container.Nil
 Nil prf with (sym prf `transitive` (NilIsEmpty {c} guest))
   Nil prf | _ impossible
 
 ||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
-public export
+export
 0 (::) : {rel: Rel a} -> {xs: c a} -> rel x y -> DecEq a => Container a c => RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
 (::) relXY f prf with (decEq guest y)
   (::) relXGuest f prf | (Yes Refl) = relXGuest
   (::) relXY f prf | (No guestNEqY) = f $ ConsKeepsRest y xs guest guestNEqY `transitive` prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
-public export
+export
 0 tail : {x: a} -> {xs: c a} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => RelatesToAll rel e xs
 tail f prf with (decEq guest x)
   tail f prf | (Yes Refl) = f $ sym $ ConsAddsOne guest xs
   tail f prf | (No guestNEqX) = f $ (sym $ ConsKeepsRest x xs guest guestNEqX) `transitive` prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
-public export
+export
 0 head : {x: a} -> {xs: c a} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => rel e x
 head f = f $ sym $ ConsAddsOne x xs
 
@@ -56,7 +56,7 @@ oneMustBeNonZero {a = 0} {b = (S k)} prf = Right (k # Refl)
 oneMustBeNonZero {a = (S k)} {b = b} prf = Left (k # Refl)
 
 ||| If e relates to all the elements in the list xs and to all the elements in the list ys then it relates to all the elements in the list xs++ys.
-public export
+export
 0 (++) : {xs, ys: c a} -> Container a c => RelatesToAll rel e xs -> RelatesToAll rel e ys -> DecEq a => RelatesToAll rel e (xs++ys)
 (++) eXs eYs prf with (oneMustBeNonZero ((sym $ ConcMerges xs ys guest) `transitive` prf))
   (++) eXs eYs prf | (Left (_ # x)) = eXs x

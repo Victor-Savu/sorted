@@ -21,16 +21,16 @@ import public Sorted.Sorted
 ||| sorted is a sorting of scrambled according to the ordering induced by rel if
 ||| sorted is both sorted and it is a permutation of scrambled.
 public export
-IsSortingOf : LinearOrder a rel => Container a c => Rel (c a)
-IsSortingOf scrambled sorted = (Sorted {rel} sorted , scrambled ~@~ sorted)
+data IsSortingOf : LinearOrder a rel => Container a c => Rel (c a) where
+    Iso: (Sorted @{lo} @{ct} sorted) -> (scrambled ~@~ sorted) @{ct} -> IsSortingOf @{lo} @{ct} scrambled sorted
 
-public export
+export
 [uninhabitedIsSortingOfEmptyCons] {0 x:a} -> {0 xs: c a} -> LinearOrder a rel => Container a c => Uninhabited (IsSortingOf {rel} [] (x::xs)) where
-    uninhabited (sortedXXs, Ipo isPermutationOfNilXXs) = void $ SIsNotZ $ ((ConsAddsOne x xs) `transitive` (sym $ isPermutationOfNilXXs x)) `transitive` (NilIsEmpty {c} x)
+    uninhabited (Iso sortedXXs (Ipo isPermutationOfNilXXs)) = void $ SIsNotZ $ ((ConsAddsOne x xs) `transitive` (sym $ isPermutationOfNilXXs x)) `transitive` (NilIsEmpty {c} x)
 
-public export
+export
 DecEq a => LinearOrder a rel => Container a c => Transitive (c a) (IsSortingOf {rel}) where
-    transitive (_, s) (w, t) = (w, transitive @{transitiveIsPermutationOf} s t)
+    transitive (Iso _ s) (Iso w t) = Iso w (transitive @{transitiveIsPermutationOf} s t)
 
 -- aiso : DecEq a => (xs: List a) -> (ys: List a) -> (lo: LinearOrder a rel) => (isoXY: IsSortingOf lo xs ys) -> (isoYX : IsSortingOf lo ys xs) -> xs = ys
 -- aiso [] [] isoXY isoYX = Refl
@@ -53,6 +53,6 @@ DecEq a => LinearOrder a rel => Container a c => Transitive (c a) (IsSortingOf {
 --       step = aiso xs ys (tail sortedY, tail ipoXY') (tail sortedX, tail ipoYX')
 --     in cong2 (::) xEqY step
 
--- public export
+-- export
 -- [antisymmetricIsSortingOf] DecEq a => (lo: LinearOrder a rel) => Antisymmetric (List a) (IsSortingOf lo) where
 --     antisymmetric isoXY isoYX = aiso x y isoXY isoYX

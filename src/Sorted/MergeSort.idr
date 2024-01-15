@@ -145,7 +145,7 @@ merge' (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (siz
 
 -- ||| Sort a list in accordance to the linear order induced by rel.
 -- ||| This is an implementation of the merge sort algorithm.
--- public export
+-- export
 -- mergeSort : (as: List a) ->  DecEq a => (lo: LinearOrder a rel) => (List a) # (IsSortingOf lo as)
 -- mergeSort as with (sizeAccessible as)
 --   mergeSort as | acc with (split as)

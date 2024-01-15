@@ -18,12 +18,12 @@ import Sorted.Sorted
 ford : (0 _: a = b) -> a -> b
 ford Refl = id
 
-public export
+export
 Maybe' : Nat -> Type -> Type
 Maybe' 0 _ = Unit
 Maybe' (S _) ty = ty
 
-public export
+export
 data Heap : (0 n: Nat) -> (0 lo: LinearOrder a rel) -> (0 h: Maybe' n a) -> Type where
     Nil : Heap 0 lo {rel} {a} ()
     Singleton: Heap 1 lo {rel} {a} h
@@ -31,7 +31,7 @@ data Heap : (0 n: Nat) -> (0 lo: LinearOrder a rel) -> (0 h: Maybe' n a) -> Type
     Balanced : (h: a) -> (0 hl: rel h l) -> (0 hr: rel h r) -> (left: Heap (1+m) lo {rel} {a} l) -> (right: Heap (1+m) lo {rel} {a} r) -> Heap (3+m+m) lo {rel} {a} h
     Imbalanced : (h: a) -> (0 hl: rel h l) -> (0 hr: rel h r) -> (left: Heap (2 + m) lo {rel} {a} l) -> (right: Heap (1+m) lo {rel} {a} r) -> Heap (4+m+m) lo {rel} {a} h
 
-public export
+export
 data OccursH : a -> Nat -> Heap n lo {rel} {a} h -> Type where
     ||| A proof that the occurrent is not in the empty heap
     Nowhere : OccursH occurrent 0 [] {lo} {rel} {a}
@@ -52,7 +52,7 @@ data OccursH : a -> Nat -> Heap n lo {rel} {a} h -> Type where
     YImbalanced : (leftH: OccursH occurrent occl left {n=(2+m)} {lo} {rel} {a}) -> (rightH: OccursH occurrent occr right {n=1+m} {lo} {rel} {a}) -> OccursH occurrent (1+occl+occr) (Imbalanced {m} {lo} {rel} {a} occurrent hl hr left right) {lo} {rel} {a}
 
 ||| Count the number of times a value occurs in a heap.
-public export
+export
 0 countOccurrences: DecEq a => (x: a) -> (heap: Heap n lo h) -> DPair Nat (\occ => OccursH x occ heap)
 countOccurrences x [] = (0 ** Nowhere)
 countOccurrences {h} x Singleton with (decEq x h)
@@ -87,7 +87,7 @@ countOccurrences x (Imbalanced h hl hr left right) with (decEq x h)
     in (occl+occr ** NImbalanced xNEqH hInLeft hInRight)
 
 -- covering
--- public export
+-- export
 -- toList : Heap n lo top {rel} {a} -> DecEq a => List a # Sorted lo
 -- toList [] = [] # []
 -- toList Singleton = ?toList_rhs_1
@@ -95,14 +95,14 @@ countOccurrences x (Imbalanced h hl hr left right) with (decEq x h)
 -- toList (Balanced top hl hr left right) = ?toList_rhs_3
 -- toList (Imbalanced top hl hr left right) = ?toList_rhs_4
 
--- public export
+-- export
 -- fromList : (0 lo: LinearOrder a rel) -> (xs: List a) -> Heap lo top {rel} {a}
 
 -- 0 correct : (0 lo: LinearOrder a rel) -> DecEq a => (xs: List a) -> IsSortingOf lo xs (toList $ fromJust lo xs)
 -- correct lo xs = (?correct_IsSorted, ?correct_IsPermutationOf)
 
 -- covering
--- public export
+-- export
 -- toList : {0 rel: Rel a} -> {lo: LinearOrder a rel} -> Heap {rel=rel} lo n -> DecEq a => List a
 -- toList [] = []
 -- toList (Singleton x) = [x]
@@ -127,11 +127,11 @@ countOccurrences x (Imbalanced h hl hr left right) with (decEq x h)
 --                     ((((relXLeft ++ relXRight) {rel=rel} {e=x}) -@-> pxs') {rel=rel} :: sxs') {rel=rel}
 --         in (sortedXXs', (pxxs `transitive` pxxs') @{transitiveIsPermutationOf})
 
--- public export
+-- export
 -- HeapOf : (0 lo: LinearOrder a rel) -> List a -> Heap lo n -> Type
 -- HeapOf lo perm heap = perm ~@~ toList heap
 
--- public export
+-- export
 -- (::) : (x: a) -> List a # HeapOf lo xs -> List a # HeapOf lo (x::xs)
 -- (::) {xs} x ([] # prf) = [x] # (Singleton, x :: snd prf)
 -- (::) {xs} x ((y :: ys) # prf) = ?op_rhs_2
@@ -151,13 +151,13 @@ countOccurrences x (Imbalanced h hl hr left right) with (decEq x h)
 --         AdditionOfPermutationsCommutes {xs=[y]} {ys=[z]} $ reflexive {x=[y] ++ [z]} @{reflexiveIsPermutationOf})
 --   tail (y :: (z :: (ys ++ (w :: zs)))) hxs | (SplitPair z ys w zs) = ?tail_rhs_1_rhs1_2
 
--- public export
+-- export
 -- fromList : (xs: List a) -> List a # HeapOf lo xs
 -- fromList [] = [] # ([], reflexive @{reflexiveIsPermutationOf})
 -- fromList (x :: xs) = x :: fromList xs
 
 
 -- covering
--- public export
+-- export
 -- heapSort : (as: List a) ->  DecEq a => (lo: LinearOrder a rel) => (List a) # (IsSortingOf lo as)
 -- heapSort x = toList $ fromList x

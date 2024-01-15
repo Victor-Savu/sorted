@@ -17,7 +17,7 @@ infixr 9 .#.
 %hide Prelude.Nil
 
 
-public export
+export
 ford : (0 _: a = b) -> a -> b
 ford Refl = id
 
@@ -38,7 +38,7 @@ ford Refl = id
 |||    1. As counted by (.#.), x occurs in xxs one time more than it occurs in xs (showing that x was inserted exactly once by (::))
 |||    2. Given any other element of a (call it x'), that element will occur the same number of times in xs as it does in xxs (showing that no other
 |||       element of xs was duplicated or removed by (::))
-public export
+export
 interface Container a (0 c: Type -> Type) | c where
     constructor MkContainer
 
@@ -67,14 +67,14 @@ export
 [uninhabitedConsIsNil] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited (x::xs = []) where
    uninhabited xXsIsNil = absurdity $ transitive (ConsAddsOne x xs) $ transitive (cong (x .#.) xXsIsNil) (NilIsEmpty x)
 
-public export
+export
 0 ConcNilRightNeutral : (xs: c a) -> DecEq a => Container a c => xs ++ [] = xs
 ConcNilRightNeutral xs with (sizeAccessible @{ContainerSized} xs)
   ConcNilRightNeutral xs | acc with (Match xs)
     ConcNilRightNeutral _ | acc | Left Refl = ConcNilLeftNeutral []
     ConcNilRightNeutral _ | Access acc | Right ((x, xs') # Refl) = ConcReduces x xs' [] `transitive` (cong (x ::) (ConcNilRightNeutral xs' | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))
 
-public export
+export
 0 ConcMerges : (xs: c a) -> (ys: c a) -> (x: a) -> DecEq a => Container a c => x .#. (xs ++ ys) = x .#. xs + x .#. ys
 ConcMerges xs ys x with (sizeAccessible @{ContainerSized} xs)
   ConcMerges xs ys x |acc with (Match xs)
@@ -83,24 +83,24 @@ ConcMerges xs ys x with (sizeAccessible @{ContainerSized} xs)
       ConcMerges _ ys x | Access acc | (Right ((x, xs') # Refl)) | (Yes Refl) = (((cong (x .#.) (ConcReduces x xs' ys)) `transitive` (sym $ ConsAddsOne x (xs' ++ ys))) `transitive` (cong S (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))) `transitive` (cong (+ (x .#. ys)) $ ConsAddsOne x xs')
       ConcMerges _ ys x | Access acc | (Right ((x', xs') # Refl)) | (No xNEqX') = (((cong (x .#.) (ConcReduces x' xs' ys)) `transitive` (sym $ ConsKeepsRest x' (xs' ++ ys) x xNEqX')) `transitive` (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x=x'} {xs=xs'} in reflexive))) `transitive` (cong (+ (x .#. ys)) $ ConsKeepsRest x' xs' x xNEqX')
 
-public export
+export
 yes : DecEq a => (x: a) -> decEq x x = Yes Refl
 yes x with (decEq x x)
   yes x | (Yes Refl) = Refl
   yes x | (No xNEqX) = void $ xNEqX Refl
 
-public export
+export
 no : DecEq a => {x, x': a} -> (xNEqX': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
 no xNEqX' with (decEq x x')
   no x'NEqX' | (Yes Refl) = void $ x'NEqX' Refl
   no _ | (No xNEqX') = xNEqX' # Refl
 
 
-public export
+export
 0 Next : {x: a} -> {xs: c a} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
 Next prf = (sym $ ConsAddsOne x xs) `transitive` (cong S prf)
 
 
-public export
+export
 0 conLeftCons : Container a c => (x: a) -> {0 xs, ys, zs: c a} -> xs ++ ys = zs -> (x::xs) ++ ys = x::zs
 conLeftCons x prf = (ConcReduces x xs ys) `transitive` (cong (x::) prf)
