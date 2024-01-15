@@ -50,12 +50,6 @@ public export
 0 head : {x: a} -> {xs: c a} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => rel e x
 head f = f $ sym $ ConsAddsOne x xs
 
-||| [] is right-neutral with respect to ++. Ideally this should have been provided by the Semigroup implementation for List but
-||| the semigroup laws are not implemented.
-public export
-0 plusNilRightNeutral : {xs: c a} -> Container a c => xs ++ [] = xs
-plusNilRightNeutral = ConcNilRightNeutral xs
-
 0 oneMustBeNonZero : a + b = S n -> Either (Nat # \k => a = S k) (Nat # \k => b = S k)
 oneMustBeNonZero {a = 0} {b = 0} prf = void $ SIsNotZ $ sym prf
 oneMustBeNonZero {a = 0} {b = (S k)} prf = Right (k # Refl)

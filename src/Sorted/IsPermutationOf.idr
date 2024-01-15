@@ -56,13 +56,13 @@ public export
 0 AdditionOfPermutationsCommutes : {xs, ys, p: c a} -> Container a c => p ~@~ (xs++ys) -> DecEq a => p ~@~ (ys++xs)
 AdditionOfPermutationsCommutes (Ipo occ) = Ipo occ' where
     occ' : (e : a) -> e .#. p = e .#. (ys ++ xs)
-    occ' e = ((occ e `transitive` ConcMerges {c} xs ys e) `transitive` plusCommutative (e .#. xs) (e .#. ys)) `transitive` (sym $ ConcMerges {c} ys xs e)
+    occ' e = ((occ e `transitive` (ConcMerges {c} xs ys e)) `transitive` (plusCommutative (e .#. xs) (e .#. ys))) `transitive` (sym $ ConcMerges {c} ys xs e)
 
 public export
 0 (++) : {x, y, z, t: c a} -> Container a c => DecEq a => x ~@~ y -> z ~@~ t -> (x++z) ~@~ (y++t)
 (++) (Ipo occ_x_y) (Ipo occ_z_t) = Ipo occ_xz_yt where
     occ_xz_yt : (e : a) -> e .#. (x ++ z) = e .#. (y ++ t)
-    occ_xz_yt e = (ConcMerges {c} x z e `transitive` cong2 (+) (occ_x_y e) (occ_z_t e)) `transitive` (sym $ ConcMerges {c} y t e)
+--     occ_xz_yt e = (ConcMerges {c} x z e `transitive` cong2 (+) (occ_x_y e) (occ_z_t e)) `transitive` (sym $ ConcMerges {c} y t e)
 
 public export
 Nil : Container a c => IsPermutationOf {c} [] []

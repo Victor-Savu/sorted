@@ -1,6 +1,7 @@
 module Sorted.Container
 
 import public Control.Relation
+import Control.WellFounded
 import Data.Void
 import Data.Nat
 import Decidable.Equality
@@ -8,6 +9,12 @@ import Decidable.Equality
 import public Sorted.Prop
 
 infixr 9 .#.
+
+%default total
+
+%hide Prelude.(::)
+%hide Prelude.Stream.(::)
+%hide Prelude.Nil
 
 ||| A container is a type that
 ||| a. has an element representing the empty container
@@ -39,76 +46,99 @@ interface Container a (0 c: Type -> Type) | c where
     (::) : a -> c a -> c a
     0 ConsAddsOne : (x: a) -> (xs : c a) -> (1 + x .#. xs) = x .#. (x :: xs)
     0 ConsKeepsRest : (x: a) -> (xs : c a) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
-    0 ConsBiinjective : (x: a) -> Biinjective (::)
+    0 ConsBiinjective : Biinjective (::)
+    -- 0 ConsSize : Sized (c a) => (x : a) -> (xs: c a) -> LTE (S (size xs)) (size (x::xs))
 
     (++) : (xs: c a) -> (ys: c a) -> c a
-    0 ConcMerges : (xs: c a) -> (ys: c a) -> (x: a) -> x .#. (xs ++ ys) = x .#. xs + x .#. ys
-    0 ConcNilRightNeutral : (xs: c a) -> xs ++ [] = xs
+    0 ConcNilLeftNeutral : (xs: c a) -> [] ++ xs = xs
+    0 ConcReduces : (x: a) -> (xs, ys: c a) -> (x::xs) ++ ys = x :: (xs ++ ys)
+
+    Match : (xs: c a) -> Either (xs = []) ((a, c a) # \q => (fst q)::(snd q) = xs)
 
 export
 [uninhabitedConsIsNil] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited (x::xs = []) where
    uninhabited xXsIsNil = absurdity $ transitive (ConsAddsOne x xs) $ transitive (cong (x .#.) xXsIsNil) (NilIsEmpty x)
 
-headIsSame : {x, y: a} -> {xs, ys: c a} -> DecEq a => Container a c => x::xs = y::ys -> x = y
-headIsSame prf with (decEq x y)
-  headIsSame prf | (Yes Refl) = Refl
-  headIsSame prf | (No xNEqY) = ?headIsSame_rhs_rhss_1
-
--- Implementation for List
+public export
+data DominatedBottom = MkDominatedBottom
 
 public export
-yes : DecEq a => (x: a) -> decEq x x = Yes Refl
-yes x with (decEq x x)
-  yes x | (Yes Refl) = Refl
-  yes x | (No xNEqX) = void $ xNEqX Refl
+data Dominated : Container a c => c a -> c a -> Type where
+    Dom : (x: a) -> (xs, ys: c a) -> (dom: S ((x .#. xs) @{ct}) = (x .#. ys) @{ct}) -> (dom': (y: a) -> (y .#. xs) @{ct} `LTE` (y .#. ys) @{ct} ) -> Dominated @{ct} {c} ((x::xs) @{ct}) ((x::ys) @{ct})
 
 public export
-no : DecEq a => {x, x': a} -> (xNEqX': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
-no xNEqX' with (decEq x x')
-  no x'NEqX' | (Yes Refl) = void $ x'NEqX' Refl
-  no _ | (No xNEqX') = xNEqX' # Refl
+DominatedAccessible : Container a c => c a -> Type
+DominatedAccessible = Accessible Dominated
 
-
-0 Next : {x: a} -> {xs: c a} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
-Next prf = (sym $ ConsAddsOne x xs) `transitive` (cong S prf)
-
-public export
-ford : (0 _: a = b) -> a -> b
-ford Refl = id
-
-predec : {x: Nat} -> Not (x = 0) -> Nat # (\pred => x = S pred)
-predec {x = 0} f = void $ f Refl
-predec {x = (S k)} f = k # Refl
+pureDominatedAccessible : Container a c => (zs: c a) -> (zs = []) -> Accessible Dominated zs
+pureDominatedAccessible zs zsEqNil = Access $ acc zs zsEqNil where
+    acc : (zs: c a) -> (zs = []) -> (ys : c a) -> Dominated ys zs -> Accessible Dominated ys
+    acc (y :: zs') pf (y :: ys') (Dom y ys' zs' dom dom') = absurdity @{uninhabitedConsIsNil} pf
 
 public export
-DecEq a =>  Container a List where
-    x .#. [] = 0
-    x .#. (x' :: xs) with (decEq x x')
-        x .#. (x :: xs) | (Yes Refl) = 1 + x .#. xs
-        x .#. (x' :: xs) | (No _) = x .#. xs
+dominatesAccessible : Container a c => (ys: c a) -> DominatedAccessible ys
+dominatesAccessible ys with (Match ys)
+  dominatesAccessible _ | (Left Refl) = pureDominatedAccessible [] Refl
+  dominatesAccessible ys | (Right ((y, ys') # yYs'EqYs)) = Access $ acc (y .#. ys) y ys' ys Refl yYs'EqYs where
+    acc : (yInYs: Nat) -> (y: a) -> (ys', ys: c a) -> (0 yInYsPrf: y .#. ys = yInYs) -> (0 yYs'EqYs: y::ys' = ys) -> (xs : c a) -> Dominated xs ys -> Accessible Dominated xs
+    acc 0 y ys' (x::ys'') yInYsPrf yYs'EqYs (x :: xs) (Dom x xs ys'' dom dom') = void $ SIsNotZ $ (((ConsAddsOne y ys') `transitive` (cong (y .#.) yYs'EqYs)) `transitive` yInYsPrf)
+    acc (S k) y ys' (x::ys'') yInYsPrf yYs'EqYs (x :: xs) (Dom x xs ys'' dom dom') =  Access (\ws => \domWsXXs => let
+            0 bimbim = biinjective @{ConsBiinjective} yYs'EqYs
+            0 fuga = ((sym (ConsAddsOne x xs) `transitive` dom) `transitive` (cong (.#. ys'') $ sym (fst bimbim))) `transitive` (injective (ConsAddsOne y ys'' `transitive` ((cong (\q => y .#. (q :: ys'')) $ fst bimbim) `transitive` yInYsPrf)))
+            chomasd = acc k x xs (x::xs) fuga Refl ws domWsXXs
+        in chomasd)
 
-    [] = []
-    NilIsEmpty x = Refl
-    NilIsUnique [] uniq = Refl
-    NilIsUnique (x :: xs) uniq  with (decEq (x .#. xs) 0)
-      NilIsUnique (x :: xs) uniq | Yes yes0 = void $ SIsNotZ $ (uniq {m=1} x) (rewrite yes x in rewrite yes0 in rewrite sym (Next {c=List} {a} yes0) in Refl)
-      NilIsUnique (x :: xs) uniq | No not0 =
-        let
-          n # pdk = predec not0
-        in void $ SIsNotZ $ uniq {m=S (x .#. xs)} x $ rewrite ConsAddsOne x xs in rewrite yes x in rewrite cong S $ (plusZeroLeftNeutral $ x .#. xs) in rewrite cong S pdk in rewrite sym (Next {c=List} {a} pdk) in Refl 
+public export
+[containerSize] Container a c => Sized (c a) where
+    size xs with (Match xs)
+      size _ | (Left Refl) = 0
+      size xxs | (Right ((x, xs) # xXsEqXxs)) = ?size_0_rhse_1 where
+        perf : (x': a) -> (xs', xXs': c a) -> (x'::xs') = xXs' -> S (size xs') = size xXs'
+        perf x' xs' xXs' prf with (Match xs')
+          perf x' _ xXs' prf | (Left Refl) = ?perf_rhs_rhss_0
+          perf x' xs' xXs' prf | (Right y) = ?perf_rhs_rhss_1
 
-    x :: xs = x::xs
-    ConsAddsOne x xs = rewrite yes x in Refl
-    ConsKeepsRest x xs x' x'NEqX = let _ # p = no x'NEqX in rewrite p in Refl
-    ConsBiinjective x = MkBiinjective ?impls where
-        impl : {xs, ys: List a} -> Container.(::) x xs = Container.(::) y ys -> (x = y, xs = ys)
-        impl Refl = (Refl, Refl)
 
-    xs ++ ys = xs ++ ys
-    ConcMerges [] ys x = Refl
-    ConcMerges (y :: xs) ys x with (decEq x y)
-      ConcMerges (x :: xs) ys x | (Yes Refl) = cong S $ ConcMerges xs ys x
-      ConcMerges (y :: xs) ys x | (No contra) = ConcMerges xs ys x
-    
-    ConcNilRightNeutral [] = Refl
-    ConcNilRightNeutral (x :: xs) = cong (x ::) (ConcNilRightNeutral xs)
+
+-- covering
+-- public export
+-- 0 ConcNilRightNeutral : (xs: c a) -> Sized (c a) => DecEq a => Container a c => xs ++ [] = xs
+-- ConcNilRightNeutral xs with (sizeAccessible xs)
+--   ConcNilRightNeutral xs | acc with (Match xs)
+--     ConcNilRightNeutral _ | acc | Left Refl = ConcNilLeftNeutral []
+--     ConcNilRightNeutral _ | acc | Right ((x, xs') # Refl) =
+--       let
+--         sa = (ConcNilRightNeutral xs' | ?helps)
+--       in ConcReduces x xs' [] `transitive` (cong (x ::) sa)
+
+-- covering
+-- public export
+-- 0 ConcMerges : (xs: c a) -> (ys: c a) -> (x: a) -> DecEq a => Container a c => x .#. (xs ++ ys) = x .#. xs + x .#. ys
+-- ConcMerges xs ys x with (Match xs)
+--   ConcMerges _ ys x | (Left Refl) = cong2 (+) (sym (NilIsEmpty {c} x)) (cong (x .#.) $ ConcNilLeftNeutral ys)
+--   ConcMerges _ ys x | (Right ((x', xs') # Refl)) with (decEq x x')
+--     ConcMerges _ ys x | (Right ((x, xs') # Refl)) | (Yes Refl) = (((cong (x .#.) (ConcReduces x xs' ys)) `transitive` (sym $ ConsAddsOne x (xs' ++ ys))) `transitive` (cong S (ConcMerges xs' ys x))) `transitive` (cong (+ (x .#. ys)) $ ConsAddsOne x xs')
+--     ConcMerges _ ys x | (Right ((x', xs') # Refl)) | (No xNEqX') = (((cong (x .#.) (ConcReduces x' xs' ys)) `transitive` (sym $ ConsKeepsRest x' (xs' ++ ys) x xNEqX')) `transitive` (ConcMerges xs' ys x)) `transitive` (cong (+ (x .#. ys)) $ ConsKeepsRest x' xs' x xNEqX')
+
+
+-- -- Implementation for List
+
+-- public export
+-- yes : DecEq a => (x: a) -> decEq x x = Yes Refl
+-- yes x with (decEq x x)
+--   yes x | (Yes Refl) = Refl
+--   yes x | (No xNEqX) = void $ xNEqX Refl
+
+-- public export
+-- no : DecEq a => {x, x': a} -> (xNEqX': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
+-- no xNEqX' with (decEq x x')
+--   no x'NEqX' | (Yes Refl) = void $ x'NEqX' Refl
+--   no _ | (No xNEqX') = xNEqX' # Refl
+
+
+-- 0 Next : {x: a} -> {xs: c a} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
+-- Next prf = (sym $ ConsAddsOne x xs) `transitive` (cong S prf)
+
+-- public export
+-- ford : (0 _: a = b) -> a -> b
+-- ford Refl = id
