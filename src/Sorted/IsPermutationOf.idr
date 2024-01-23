@@ -76,7 +76,7 @@ PermutationOfNilIsNil p with (Match xs)
     void $ SIsNotZ ((ConsAddsOne x' xs') \=> rewrite x'Xs'EqXs in (sym $ p x') \=> (NilIsEmpty {c} x'))
 
 export
-(::) : {xs, ys: c a} -> (x: a) -> DecEq a => Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
+0 (::) : {xs, ys: c a} -> (x: a) -> DecEq a => Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
 (::) x (Ipo occ) = Ipo occ' where
     occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
     occ' e with (decEq e x)
@@ -84,7 +84,7 @@ export
       occ' e | (No eNEqX) = (sym (ConsKeepsRest x xs e eNEqX) \=> occ e) \=> ConsKeepsRest x ys e eNEqX
 
 export
-tail : {x: a} -> {xs, ys: c a} -> Container a c => x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
+0 tail : {x: a} -> {xs, ys: c a} -> Container a c => x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
 tail (Ipo occ) = Ipo occ' where
     occ' : (e : a) -> e .#. xs = e .#. ys
     occ' e with (decEq e x)

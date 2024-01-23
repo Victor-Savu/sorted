@@ -45,21 +45,21 @@ interface Container a (0 c: Type -> Type) | c where
     (.#.) : a -> c a -> Nat
 
     Nil : c a
-    NilIsEmpty : (x: a) -> x .#. [] = 0
-    NilIsUnique : (xs: c a) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
+    0 NilIsEmpty : (x: a) -> x .#. [] = 0
+    0 NilIsUnique : (xs: c a) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
 
     (::) : a -> c a -> c a
-    ConsAddsOne : (x: a) -> (xs : c a) -> (1 + x .#. xs) = x .#. (x :: xs)
-    ConsKeepsRest : (x: a) -> (xs : c a) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
-    ConsBiinjective : Biinjective (::)
+    0 ConsAddsOne : (x: a) -> (xs : c a) -> (1 + x .#. xs) = x .#. (x :: xs)
+    0 ConsKeepsRest : (x: a) -> (xs : c a) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
+    0 ConsBiinjective : Biinjective (::)
 
     (++) : (xs: c a) -> (ys: c a) -> c a
-    ConcNilLeftNeutral : (xs: c a) -> [] ++ xs = xs
-    ConcReduces : (x: a) -> (xs, ys: c a) -> (x::xs) ++ ys = x :: (xs ++ ys)
+    0 ConcNilLeftNeutral : (xs: c a) -> [] ++ xs = xs
+    0 ConcReduces : (x: a) -> (xs, ys: c a) -> (x::xs) ++ ys = x :: (xs ++ ys)
     
     ContainerSized : Sized (c a)
-    SizedNil: size @{ContainerSized} [] = 0
-    SizedCons: {0 x: a} -> {0 xs: c a} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
+    0 SizedNil: size @{ContainerSized} [] = 0
+    0 SizedCons: {0 x: a} -> {0 xs: c a} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
 
     Match : (xs: c a) -> Either (xs = []) ((a, c a) # \q => (fst q)::(snd q) = xs)
 
@@ -71,8 +71,8 @@ export
 a \=> b = transitive a b
 
 export
-[uninhabitedConsIsNil] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited (x::xs = []) where
-   uninhabited xXsIsNil = absurdity $ (ConsAddsOne x xs) \=> (cong (x .#.) xXsIsNil) \=>  (NilIsEmpty x)
+[uninhabitedConsIsNil] Container a c => Uninhabited (x::xs = ([] {c})) where
+    uninhabited xXsIsNil = absurdity $ (ConsAddsOne x xs) \=> (cong (x .#.) xXsIsNil) \=>  (NilIsEmpty x)
 
 export
 0 ConcNilRightNeutral : (xs: c a) -> DecEq a => Container a c => xs ++ [] = xs

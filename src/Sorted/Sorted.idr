@@ -50,14 +50,14 @@ export
 
 ||| The tail of a sorted list is also a sorted list.
 export
-0 tail : {x': a} -> {xs', ys': c a} -> LinearOrder a rel => Container a c => {ysIsCons: x'::xs' = ys'} -> (Sorted {rel} {c} ys') -> (Sorted {c} {rel} xs')
+0 tail : LinearOrder a rel => Container a c => {x: a} -> {ysIsCons: x::xs = ys} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} xs)
 tail [] = absurdity @{uninhabitedConsIsNil} ysIsCons
 tail (Singleton y) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) []
 tail (relXY :@: sortedYYs) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) sortedYYs
 
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
 export
-0 head : {x: a} -> {xs, ys: c a} -> LinearOrder a rel => Container a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
+0 head : LinearOrder a rel => Container a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
 head [] _ = absurdity @{uninhabitedConsIsNil} ysIsCons
 head (Singleton y) prf = void $ SIsNotZ $ (sym prf) \=> ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) \=> (NilIsEmpty guest))
 head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective {c}} ysIsCons)

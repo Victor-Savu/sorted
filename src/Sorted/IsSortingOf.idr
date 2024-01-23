@@ -56,7 +56,7 @@ cons acc x (f # prf) with (Match f)
       cons acc x (f # prf) | (Right ((y, xs) # yxsEqF)) | (No xNEqY) | (Left relXY) = (x::y::xs) # case (yxsEqF, prf) of (Refl, Iso sXXs pYXs) => Iso (relXY :@: sXXs) (x :: pYXs)
       cons (Access acc) x (f # Iso sYXs pYXs) | (Right ((y, xs) # yxsEqF)) | (No xNEqY) | (Right relYX) =
         let
-            xs' # step = (cons (acc _ $ eqLTE $ sym (PermutationHasSameSize pYXs \=> cong (size @{ContainerSized}) (sym yxsEqF) \=> SizedCons)) x (xs # Iso (tail {ys'=f} {ysIsCons=yxsEqF} (sYXs)) (reflexive @{reflexiveIsPermutationOf}))) {rel} {orig=xs} 
+            xs' # step = (cons (acc _ $ eqLTE $ sym (PermutationHasSameSize pYXs \=> cong (size @{ContainerSized}) (sym yxsEqF) \=> SizedCons)) x (xs # Iso (tail {ysIsCons=yxsEqF} (sYXs)) (reflexive @{reflexiveIsPermutationOf}))) {rel} {orig=xs} 
         in (y::xs') #
           case (yxsEqF, step) of
             (Refl, Iso sXs' pXs') =>
