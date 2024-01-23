@@ -19,12 +19,11 @@ depends = linear, contrib
 modules =
     Sorted,
     Sorted.Container,
-    -- Sorted.Heap,
+    Sorted.Container.List,
     Sorted.InsertionSort,
     Sorted.IsPermutationOf,
     Sorted.IsSortingOf,
-    -- Sorted.MergeSort,
-    -- Sorted.Occurs,
+    Sorted.MergeSort,
     Sorted.Prop,
     Sorted.Relates,
     Sorted.Sorted

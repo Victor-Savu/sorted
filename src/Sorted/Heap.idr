@@ -125,7 +125,7 @@ countOccurrences x (Imbalanced h hl hr left right) with (decEq x h)
 --                     ((((relXLeft ++ relXRight) {rel=rel} {e=x}) -@-> pxs') {rel=rel} :: sxs') {rel=rel}
 --                 (Imbalanced x leftH rightH imbalanced relXLeft relXRight) =>
 --                     ((((relXLeft ++ relXRight) {rel=rel} {e=x}) -@-> pxs') {rel=rel} :: sxs') {rel=rel}
---         in (sortedXXs', (pxxs `transitive` pxxs') @{transitiveIsPermutationOf})
+--         in (sortedXXs', (pxxs \=> pxxs') @{transitiveIsPermutationOf})
 
 -- export
 -- HeapOf : (0 lo: LinearOrder a rel) -> List a -> Heap lo n -> Type

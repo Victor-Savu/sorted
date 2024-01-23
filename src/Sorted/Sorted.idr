@@ -38,7 +38,7 @@ data Sorted: (lo: LinearOrder a rel) => (ct: Container a c) => c a -> Type where
 export
 0 (::) : DecEq a => LinearOrder a rel => Container a c => RelatesToAll {c} rel x xs -> Sorted {c} {rel} xs -> Sorted {c} {rel} ((x::xs) {c})
 (::) f [] = Singleton x
-(::) f (Singleton {x=x'}) = (f $ sym (ConsAddsOne x' Container.Nil) `transitive` (cong S $ NilIsEmpty x')) :@: Singleton x'
+(::) f (Singleton {x=x'}) = (f $ sym (ConsAddsOne x' Container.Nil) \=> (cong S $ NilIsEmpty x')) :@: Singleton x'
 (::) f ((relX'Y :@: sortedYYs) {x=x'} {ys} {y}) = (f $ sym $ ConsAddsOne x' (y::ys)) :@: relX'Y :@: sortedYYs
 
 infixr 4 -=@
@@ -59,8 +59,8 @@ tail (relXY :@: sortedYYs) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $
 export
 0 head : {x: a} -> {xs, ys: c a} -> LinearOrder a rel => Container a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
 head [] _ = absurdity @{uninhabitedConsIsNil} ysIsCons
-head (Singleton y) prf = void $ SIsNotZ $ (sym prf) `transitive` ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) `transitive` (NilIsEmpty guest))
+head (Singleton y) prf = void $ SIsNotZ $ (sym prf) \=> ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) \=> (NilIsEmpty guest))
 head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective {c}} ysIsCons)
   head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) with (decEq guest y)
     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (Yes Refl) = relXY
-    head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (No guestNEqY) = relXY `transitive` (head {x=y} {xs=ys} {ys=y::ys} {ysIsCons=Refl} sortedYYs (ConsKeepsRest y ys guest guestNEqY `transitive` prf))
+    head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (No guestNEqY) = relXY \=> (head {x=y} {xs=ys} {ys=y::ys} {ysIsCons=Refl} sortedYYs (ConsKeepsRest y ys guest guestNEqY \=> prf))

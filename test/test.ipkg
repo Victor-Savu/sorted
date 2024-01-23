@@ -23,7 +23,7 @@ main = Main
 
 -- name of executable
 executable = "sorted-test"
--- opts =
+-- opts = "--profile --timing 1"
 sourcedir = "src"
 -- builddir =
 -- outputdir =
