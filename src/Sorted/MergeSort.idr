@@ -22,13 +22,13 @@ import public Sorted.IsSortingOf
 %hide Stream.(::)
 
 public export
-data Split : Container a c => c a -> Type where
+data Split : Container a c => c -> Type where
     SplitNil : Split @{ct} ([] @{ct})
     SplitOne : (x: a) -> Split @{ct} (Container.(::) @{ct} x (Container.Nil @{ct}))
-    SplitPair : (ls: c a) -> (0 _: ls = Container.Nil @{ct} -> Void) -> (rs: c a) -> (0 _: rs = Container.Nil @{ct} -> Void) -> (0 _: (xs ~@~ (Container.(++) @{ct} ls rs)) @{ct}) -> Split @{ct} {c} xs
+    SplitPair : (ls: c) -> (0 _: ls = Container.Nil @{ct} -> Void) -> (rs: c) -> (0 _: rs = Container.Nil @{ct} -> Void) -> (0 _: (xs ~@~ (Container.(++) @{ct} ls rs)) @{ct}) -> Split @{ct} {c} xs
 
 
-split' : DecEq a => Container a c => (xs : c a) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Split xs
+split' : DecEq a => Container a c => (xs : c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Split xs
 split' xs acc with (Match xs)
   split' _ acc | (Left Refl) = SplitNil
   split' xs acc | (Right ((x, txs) # xtxs≈xs)) with (Match txs)
@@ -55,7 +55,7 @@ split' xs acc with (Match xs)
         
 
 export
-split : DecEq a => Container a c => (xs : c a) -> Split xs
+split : DecEq a => Container a c => (xs : c) -> Split xs
 split xs = split' xs (sizeAccessible @{ContainerSized} xs)
 
 0 lteSum : LTE a b -> LTE c d -> LTE (a+c) (b+d)
@@ -69,7 +69,7 @@ atLeastOneInNonEmpty xs≠Nil with (Match xs)
   atLeastOneInNonEmpty xs≠Nil | (Left Refl) = void $ xs≠Nil Refl
   atLeastOneInNonEmpty xs≠Nil | (Right ((x, xs') # Refl)) = LTESucc LTEZero \=> eqLTE (sym $ SizedCons)
 
-mergeSort' : DecEq a => LinearOrder a rel => Container a c => (xs: c a) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> (c a) # (IsSortingOf {rel} xs)
+mergeSort' : DecEq a => LinearOrder a rel => Container a c => (xs: c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> (c) # (IsSortingOf {rel} xs)
 mergeSort' xs acc with (split xs)
   mergeSort' _ (Access acc) | SplitNil = [] # []
   mergeSort' _ (Access acc) | SplitOne x = [x] # (Iso (Singleton x) (Ipo (\_ => Refl)))
@@ -84,6 +84,6 @@ mergeSort' xs acc with (split xs)
 ||| Sort a list in accordance to the linear order induced by rel.
 ||| This is an implementation of the merge sort algorithm.
 export
-mergeSort : DecEq a => LinearOrder a rel => Container a c => (xs: c a) -> (c a) # (IsSortingOf {rel} xs)
+mergeSort : DecEq a => LinearOrder a rel => Container a c => (xs: c) -> (c) # (IsSortingOf {rel} xs)
 mergeSort xs = mergeSort' xs (sizeAccessible @{ContainerSized} xs)
 

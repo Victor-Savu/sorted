@@ -18,35 +18,35 @@ infixr 4 ~@~
 
 namespace IsPermutationOf
   public export
-  data IsPermutationOf: Container a c => Rel (c a) where
+  data IsPermutationOf: Container a c => Rel c where
     Ipo : ((e :a) -> ((e .#. original) @{ct} = (e .#. permutation) @{ct})) -> IsPermutationOf @{ct} original permutation
 
 public export
-(~@~) : Container a c => Rel (c a)
+(~@~) : Container a c => Rel c
 original ~@~ permutation = IsPermutationOf original permutation
 
 export
-[uninhabitedIsPermutationOfConsNil] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited (x::xs ~@~ []) where
+[uninhabitedIsPermutationOfConsNil] {0 x: a} -> {0 xs: c} -> Container a c => Uninhabited (x::xs ~@~ []) where
     uninhabited (Ipo occ) = void $ uninhabited (((ConsAddsOne x xs) \=> occ {e=x}) \=> (NilIsEmpty x {c}))
 
 export
-[uninhabitedIsPermutationOfNilCons] {0 x: a} -> {0 xs: c a} -> Container a c => Uninhabited ([] ~@~ x::xs) where
+[uninhabitedIsPermutationOfNilCons] {0 x: a} -> {0 xs: c} -> Container a c => Uninhabited ([] ~@~ x::xs) where
     uninhabited (Ipo occ) = uninhabited @{uninhabitedIsPermutationOfConsNil {a} {c}} (Ipo $ \e => sym $ occ e)
 
 export
-[reflexiveIsPermutationOf] Container a c => Reflexive (c a) (~@~) where
+[reflexiveIsPermutationOf] Container a c => Reflexive c (~@~) where
     reflexive = Ipo (\_ => Refl)
 
 export
-[transitiveIsPermutationOf] Container a c => Transitive (c a) (~@~) where
+[transitiveIsPermutationOf] Container a c => Transitive c (~@~) where
     transitive (Ipo occ) (Ipo occ') = Ipo (\e => (occ e) \=> (occ' e))
 
 export
-[symmetricIsPermutationOf] Container a c => Symmetric (c a) (~@~) where
+[symmetricIsPermutationOf] Container a c => Symmetric c (~@~) where
   symmetric (Ipo occ) = Ipo (\eInY => sym $ occ eInY)
 
 export
-0 PermutationOfCons : {x: a} -> {xs, ys: c a} -> DecEq a => Container a c => x::xs ~@~ x::ys -> xs ~@~ ys
+0 PermutationOfCons : {x: a} -> {xs, ys: c} -> DecEq a => Container a c => x::xs ~@~ x::ys -> xs ~@~ ys
 PermutationOfCons (Ipo occ) = Ipo occ' where
     occ' : (e : a) -> e .#. xs = e .#. ys
     occ' e with (decEq e x)
@@ -54,13 +54,13 @@ PermutationOfCons (Ipo occ) = Ipo occ' where
       occ' e | (No eNEqX) = (ConsKeepsRest x xs e eNEqX \=> occ e) \=> (sym $ ConsKeepsRest x ys e eNEqX)
 
 export
-0 AdditionOfPermutationsCommutes : {xs, ys, p: c a} -> Container a c => p ~@~ (xs++ys) -> DecEq a => p ~@~ (ys++xs)
+0 AdditionOfPermutationsCommutes : {xs, ys, p: c} -> Container a c => p ~@~ (xs++ys) -> DecEq a => p ~@~ (ys++xs)
 AdditionOfPermutationsCommutes (Ipo occ) = Ipo occ' where
     occ' : (e : a) -> e .#. p = e .#. (ys ++ xs)
     occ' e = ((occ e \=> (ConcMerges {c} xs ys e)) \=> (plusCommutative (e .#. xs) (e .#. ys))) \=> (sym $ ConcMerges {c} ys xs e)
 
 export
-0 (++) : {x, y, z, t: c a} -> Container a c => DecEq a => x ~@~ y -> z ~@~ t -> (x++z) ~@~ (y++t)
+0 (++) : {x, y, z, t: c} -> Container a c => DecEq a => x ~@~ y -> z ~@~ t -> (x++z) ~@~ (y++t)
 (++) (Ipo occ_x_y) (Ipo occ_z_t) = Ipo occ_xz_yt where
     occ_xz_yt : (e : a) -> e .#. (x ++ z) = e .#. (y ++ t)
 
@@ -69,14 +69,14 @@ Nil : Container a c => IsPermutationOf {c} [] []
 Nil = Ipo (\_ => Refl)
 
 export
-PermutationOfNilIsNil : Container a c => {xs: c a} -> IsPermutationOf [] xs -> xs = []
+PermutationOfNilIsNil : Container a c => {xs: c} -> IsPermutationOf [] xs -> xs = []
 PermutationOfNilIsNil p with (Match xs)
   PermutationOfNilIsNil p | (Left Refl) = Refl
   PermutationOfNilIsNil (Ipo p) | (Right ((x', xs') # x'Xs'EqXs)) =
     void $ SIsNotZ ((ConsAddsOne x' xs') \=> rewrite x'Xs'EqXs in (sym $ p x') \=> (NilIsEmpty {c} x'))
 
 export
-0 (::) : {xs, ys: c a} -> (x: a) -> DecEq a => Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
+0 (::) : {xs, ys: c} -> (x: a) -> DecEq a => Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
 (::) x (Ipo occ) = Ipo occ' where
     occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
     occ' e with (decEq e x)
@@ -84,7 +84,7 @@ export
       occ' e | (No eNEqX) = (sym (ConsKeepsRest x xs e eNEqX) \=> occ e) \=> ConsKeepsRest x ys e eNEqX
 
 export
-0 tail : {x: a} -> {xs, ys: c a} -> Container a c => x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
+0 tail : {x: a} -> {xs, ys: c} -> Container a c => x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
 tail (Ipo occ) = Ipo occ' where
     occ' : (e : a) -> e .#. xs = e .#. ys
     occ' e with (decEq e x)
@@ -92,7 +92,7 @@ tail (Ipo occ) = Ipo occ' where
       occ' e | (No eNEqX) = (ConsKeepsRest x xs e eNEqX \=> occ e) \=> (sym $ ConsKeepsRest x ys e eNEqX)
 
 export
-pong : Container a c => {0 p: c a -> c a} -> (f: xs ~@~ ys -> p xs ~@~ p ys) ->  xs ~@~ ys -> p xs ~@~ p ys
+pong : Container a c => {0 p: c -> c} -> (f: xs ~@~ ys -> p xs ~@~ p ys) ->  xs ~@~ ys -> p xs ~@~ p ys
 pong f g = f g
 
 export
@@ -104,7 +104,7 @@ swapIsPermutation e with (decEq e x, decEq e y)
   swapIsPermutation e | ((No eNEqX), No eNEqY) = sym ((sym $ NilIsEmpty {c} e) \=> (ConsKeepsRest {c} y [] e eNEqY \=> (ConsKeepsRest {c} x [y] e eNEqX))) \=> ((sym (NilIsEmpty {c} e) \=> (ConsKeepsRest {c} x [] e eNEqX)) \=> ConsKeepsRest {c} y [x] e eNEqY)
 
 export
-0 shiftPermutation : {0 y: a} -> {0 xs, ys, ys': c a} -> DecEq a => Container a c => IsPermutationOf {c} {a} ys (y::ys') -> IsPermutationOf {c} {a} (xs++ys) (y::(xs++ys'))
+0 shiftPermutation : {0 y: a} -> {0 xs, ys, ys': c} -> DecEq a => Container a c => IsPermutationOf {c} {a} ys (y::ys') -> IsPermutationOf {c} {a} (xs++ys) (y::(xs++ys'))
 shiftPermutation x = (
   replace {p = IsPermutationOf (xs ++ ys)}
     (ConcReduces y ys' xs)
@@ -113,7 +113,7 @@ shiftPermutation x = (
       ) @{transitiveIsPermutationOf}
 
 export
-0 PermutationHasSameSize : DecEq a => Container a c => {xs, ys: c a} -> xs ~@~ ys -> size @{ContainerSized} xs = size @{ContainerSized} ys
+0 PermutationHasSameSize : DecEq a => Container a c => {xs, ys: c} -> xs ~@~ ys -> size @{ContainerSized} xs = size @{ContainerSized} ys
 PermutationHasSameSize ipo with (sizeAccessible @{ContainerSized} xs)
   PermutationHasSameSize ipo | acc with (Match xs)
     PermutationHasSameSize ipo | acc | (Left Refl) with (PermutationOfNilIsNil ipo)

@@ -22,7 +22,7 @@ infixr 4 :@:
 
 ||| A list sorted according to a relation over the type of its elements.
 public export
-data Sorted: (lo: LinearOrder a rel) => (ct: Container a c) => c a -> Type where
+data Sorted: (lo: LinearOrder a rel) => (ct: Container a c) => c -> Type where
     ||| An empty list is always sorted.
     Nil:  Sorted @{lo} @{ct} ([] @{ct})
 
@@ -31,7 +31,7 @@ data Sorted: (lo: LinearOrder a rel) => (ct: Container a c) => c a -> Type where
 
     ||| Rel must induce a linear order over the type of elements in order to be useful for sorting.
     ||| If an element x relates to the head y of a sorted list y::ys, then x::y::ys is also sorted with respect to rel.
-    (:@:): {x, y: a} -> {ys: c a} -> rel x y -> Sorted @{lo} @{ct} {c} {a} {rel} ((y :: ys) @{ct}) -> Sorted {rel} @{lo} @{ct} {c} {a} ((x :: (y::ys) @{ct}) @{ct})
+    (:@:): {x, y: a} -> {ys: c} -> rel x y -> Sorted @{lo} @{ct} {c} {a} {rel} ((y :: ys) @{ct}) -> Sorted {rel} @{lo} @{ct} {c} {a} ((x :: (y::ys) @{ct}) @{ct})
 
 ||| If x relates to all the elements of xs and xs is sorted with respect to the linear order induced by rel,
 ||| then x::xs is also sorted with respect to the same linear order.
@@ -45,7 +45,7 @@ infixr 4 -=@
 
 ||| An alternative notation for a sorted list
 export
-(-=@) : LinearOrder a rel => Container a c => c a -> Type
+(-=@) : LinearOrder a rel => Container a c => c -> Type
 (-=@) xs = Sorted {rel} xs
 
 ||| The tail of a sorted list is also a sorted list.

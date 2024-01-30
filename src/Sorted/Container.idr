@@ -28,40 +28,40 @@ ford Refl = id
 |||
 ||| The container interface is satisfied by:
 ||| - the type a representing the type of elements in the container
-||| - the type construtor c: Type -> Type which constructs the type of the container: c a
+||| - the type construtor c: Type -> Type which constructs the type of the container: c
 ||| if it can:
-||| 1. provide a counting function (.#.): a -> c a -> Nat which counts the number of occurrences of a value of type a in the container of type c a
-||| 1. produce an "empty" container from thin air (using Nil). The empty container is a specific instance of c a (call it xs) which must satisfy the
+||| 1. provide a counting function (.#.): a -> c -> Nat which counts the number of occurrences of a value of type a in the container of type c
+||| 1. produce an "empty" container from thin air (using Nil). The empty container is a specific instance of c (call it xs) which must satisfy the
 |||    property that any value of type a occurs 0 times in xs according to the counting function. Basically, a container is empty if nothing occurs in it.
-||| 2. produce an "inhabited" container by applying (::) to an element of type a (call it x) and another container of type c a (call it xs). The
-|||    "inhabited" container is a specific instance of c a (call it xxs) which must satisfy two properties:
+||| 2. produce an "inhabited" container by applying (::) to an element of type a (call it x) and another container of type c (call it xs). The
+|||    "inhabited" container is a specific instance of c (call it xxs) which must satisfy two properties:
 |||    1. As counted by (.#.), x occurs in xxs one time more than it occurs in xs (showing that x was inserted exactly once by (::))
 |||    2. Given any other element of a (call it x'), that element will occur the same number of times in xs as it does in xxs (showing that no other
 |||       element of xs was duplicated or removed by (::))
 export
-interface Container a (0 c: Type -> Type) | c where
+interface Container a c | c where
     constructor MkContainer
 
-    (.#.) : a -> c a -> Nat
+    (.#.) : a -> c -> Nat
 
-    Nil : c a
+    Nil : c
     0 NilIsEmpty : (x: a) -> x .#. [] = 0
-    0 NilIsUnique : (xs: c a) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
+    0 NilIsUnique : (xs: c) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
 
-    (::) : a -> c a -> c a
-    0 ConsAddsOne : (x: a) -> (xs : c a) -> (1 + x .#. xs) = x .#. (x :: xs)
-    0 ConsKeepsRest : (x: a) -> (xs : c a) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
+    (::) : a -> c -> c
+    0 ConsAddsOne : (x: a) -> (xs : c) -> (1 + x .#. xs) = x .#. (x :: xs)
+    0 ConsKeepsRest : (x: a) -> (xs : c) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
     0 ConsBiinjective : Biinjective (::)
 
-    (++) : (xs: c a) -> (ys: c a) -> c a
-    0 ConcNilLeftNeutral : (xs: c a) -> [] ++ xs = xs
-    0 ConcReduces : (x: a) -> (xs, ys: c a) -> (x::xs) ++ ys = x :: (xs ++ ys)
+    (++) : (xs: c) -> (ys: c) -> c
+    0 ConcNilLeftNeutral : (xs: c) -> [] ++ xs = xs
+    0 ConcReduces : (x: a) -> (xs, ys: c) -> (x::xs) ++ ys = x :: (xs ++ ys)
     
-    ContainerSized : Sized (c a)
+    ContainerSized : Sized c
     0 SizedNil: size @{ContainerSized} [] = 0
-    0 SizedCons: {0 x: a} -> {0 xs: c a} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
+    0 SizedCons: {0 x: a} -> {0 xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
 
-    Match : (xs: c a) -> Either (xs = []) ((a, c a) # \q => (fst q)::(snd q) = xs)
+    Match : (xs: c) -> Either (xs = []) ((a, c) # \q => (fst q)::(snd q) = xs)
 
 
 infixl 4 \=>
@@ -75,7 +75,7 @@ export
     uninhabited xXsIsNil = absurdity $ (ConsAddsOne x xs) \=> (cong (x .#.) xXsIsNil) \=>  (NilIsEmpty x)
 
 export
-0 ConcNilRightNeutral : (xs: c a) -> DecEq a => Container a c => xs ++ [] = xs
+0 ConcNilRightNeutral : (xs: c) -> DecEq a => Container a c => xs ++ [] = xs
 ConcNilRightNeutral xs with (sizeAccessible @{ContainerSized} xs)
   ConcNilRightNeutral xs | acc with (Match xs)
     ConcNilRightNeutral _ | acc | Left Refl = ConcNilLeftNeutral []
@@ -86,7 +86,7 @@ eqLTE : {x, y: Nat} -> x = y -> LTE x y
 eqLTE Refl = reflexive
 
 export
-0 ConcMerges : (xs: c a) -> (ys: c a) -> (x: a) -> DecEq a => Container a c => x .#. (xs ++ ys) = x .#. xs + x .#. ys
+0 ConcMerges : (xs: c) -> (ys: c) -> (x: a) -> DecEq a => Container a c => x .#. (xs ++ ys) = x .#. xs + x .#. ys
 ConcMerges xs ys x with (sizeAccessible @{ContainerSized} xs)
   ConcMerges xs ys x |acc with (Match xs)
     ConcMerges _ ys x | acc | (Left Refl) = cong2 (+) (sym (NilIsEmpty {c} x)) (cong (x .#.) $ ConcNilLeftNeutral ys)
@@ -95,7 +95,7 @@ ConcMerges xs ys x with (sizeAccessible @{ContainerSized} xs)
       ConcMerges _ ys x | Access acc | (Right ((x', xs') # Refl)) | (No xNEqX') = (((cong (x .#.) (ConcReduces x' xs' ys)) \=> (sym $ ConsKeepsRest x' (xs' ++ ys) x xNEqX')) \=> (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x=x'} {xs=xs'} in reflexive))) \=> (cong (+ (x .#. ys)) $ ConsKeepsRest x' xs' x xNEqX')
 
 export
-0 SizedConc : Container a c => (xs, ys: c a) -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
+0 SizedConc : Container a c => (xs, ys: c) -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
 SizedConc xs ys with (sizeAccessible @{ContainerSized} xs)
   SizedConc xs ys | acc with (Match xs)
     SizedConc _ ys | acc | (Left Refl) = cong (size @{ContainerSized}) (ConcNilLeftNeutral ys) \=> replace {p = \q => (size @{ContainerSized} ys = q + size @{ContainerSized} ys)} (sym $ SizedNil {c}) reflexive
@@ -115,15 +115,15 @@ no xNEqX' with (decEq x x')
   no _ | (No xNEqX') = xNEqX' # Refl
 
 export
-0 Next : {x: a} -> {xs: c a} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
+0 Next : {x: a} -> {xs: c} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
 Next prf = (sym $ ConsAddsOne x xs) \=> (cong S prf)
 
 export
-0 conLeftCons : Container a c => (x: a) -> {0 xs, ys, zs: c a} -> xs ++ ys = zs -> (x::xs) ++ ys = x::zs
+0 conLeftCons : Container a c => (x: a) -> {0 xs, ys, zs: c} -> xs ++ ys = zs -> (x::xs) ++ ys = x::zs
 conLeftCons x prf = (ConcReduces x xs ys) \=> (cong (x::) prf)
 
 export
-0 findFirst : DecEq a => Container a c => (x: a) -> (xs: c a) -> Either (x .#. xs = 0) ((c a, c a) # (\(l, r) => (x .#. l = 0, l ++ x::r = xs)))
+0 findFirst : DecEq a => Container a c => (x: a) -> (xs: c) -> Either (x .#. xs = 0) ((c, c) # (\(l, r) => (x .#. l = 0, l ++ x::r = xs)))
 findFirst x xs with (sizeAccessible @{ContainerSized} xs)
   findFirst x xxs | acc with (Match xxs)
     findFirst x _ | acc | (Left Refl) = Left (NilIsEmpty x)

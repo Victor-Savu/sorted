@@ -14,7 +14,7 @@ import Sorted.Relates
 
 covering
 export
-insertionSort : (as: c a) ->  DecEq a => LinearOrder a rel => Container a c => (c a) # (IsSortingOf {c} {rel} as)
+insertionSort : (as: c) ->  DecEq a => LinearOrder a rel => Container a c => c # (IsSortingOf {c} {rel} as)
 insertionSort as with (Match as)
   insertionSort _ | Left Refl = [] # Iso [] (reflexive @{reflexiveIsPermutationOf} {x=([] {c})})
   insertionSort _ | Right ((x, xs) # prf) = rewrite sym prf in x :: insertionSort xs
