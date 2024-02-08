@@ -45,21 +45,21 @@ interface Container a c | c where
     (.#.) : a -> c -> Nat
 
     Nil : c
-    0 NilIsEmpty : (x: a) -> x .#. [] = 0
-    0 NilIsUnique : (xs: c) -> ({m: Nat} -> (x': a) -> x' .#. xs = m -> m = 0) -> xs = []
+    0 NilIsEmpty : forall x. x .#. [] = 0
+    0 NilIsUnique : forall xs. (forall x. x .#. xs = 0) -> xs = []
 
     (::) : a -> c -> c
-    0 ConsAddsOne : (x: a) -> (xs : c) -> (1 + x .#. xs) = x .#. (x :: xs)
-    0 ConsKeepsRest : (x: a) -> (xs : c) -> (x': a) -> (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
+    0 ConsAddsOne : forall x, xs. (1 + x .#. xs) = x .#. (x :: xs)
+    0 ConsKeepsRest :forall x, x', xs. (ne: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
     0 ConsBiinjective : Biinjective (::)
 
     (++) : (xs: c) -> (ys: c) -> c
-    0 ConcNilLeftNeutral : (xs: c) -> [] ++ xs = xs
-    0 ConcReduces : (x: a) -> (xs, ys: c) -> (x::xs) ++ ys = x :: (xs ++ ys)
+    0 ConcNilLeftNeutral : forall xs. [] ++ xs = xs
+    0 ConcReduces : forall x, xs, ys. (x::xs) ++ ys = x :: (xs ++ ys)
     
     ContainerSized : Sized c
     0 SizedNil: size @{ContainerSized} [] = 0
-    0 SizedCons: {0 x: a} -> {0 xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
+    0 SizedCons: forall x, xs. size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
 
     Match : (xs: c) -> Either (xs = []) ((a, c) # \q => (fst q)::(snd q) = xs)
 
@@ -72,14 +72,14 @@ a \=> b = transitive a b
 
 export
 [uninhabitedConsIsNil] Container a c => Uninhabited (x::xs = ([] {c})) where
-    uninhabited xXsIsNil = absurdity $ (ConsAddsOne x xs) \=> (cong (x .#.) xXsIsNil) \=>  (NilIsEmpty x)
+    uninhabited xXsIsNil = absurdity $ ConsAddsOne \=> (cong (x .#.) xXsIsNil) \=>  (NilIsEmpty)
 
 export
 0 ConcNilRightNeutral : (xs: c) -> DecEq a => Container a c => xs ++ [] = xs
 ConcNilRightNeutral xs with (sizeAccessible @{ContainerSized} xs)
   ConcNilRightNeutral xs | acc with (Match xs)
-    ConcNilRightNeutral _ | acc | Left Refl = ConcNilLeftNeutral []
-    ConcNilRightNeutral _ | Access acc | Right ((x, xs') # Refl) = ConcReduces x xs' [] \=> (cong (x ::) (ConcNilRightNeutral xs' | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))
+    ConcNilRightNeutral _ | acc | Left Refl = ConcNilLeftNeutral
+    ConcNilRightNeutral _ | Access acc | Right ((x, xs') # Refl) = ConcReduces \=> (cong (x ::) (ConcNilRightNeutral xs' | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))
 
 export
 eqLTE : {x, y: Nat} -> x = y -> LTE x y
@@ -89,17 +89,17 @@ export
 0 ConcMerges : (xs: c) -> (ys: c) -> (x: a) -> DecEq a => Container a c => x .#. (xs ++ ys) = x .#. xs + x .#. ys
 ConcMerges xs ys x with (sizeAccessible @{ContainerSized} xs)
   ConcMerges xs ys x |acc with (Match xs)
-    ConcMerges _ ys x | acc | (Left Refl) = cong2 (+) (sym (NilIsEmpty {c} x)) (cong (x .#.) $ ConcNilLeftNeutral ys)
+    ConcMerges _ ys x | acc | (Left Refl) = cong2 (+) (sym NilIsEmpty) (cong (x .#.) $ ConcNilLeftNeutral)
     ConcMerges _ ys x | acc | (Right ((x', xs') # Refl)) with (decEq x x')
-      ConcMerges _ ys x | Access acc | (Right ((x, xs') # Refl)) | (Yes Refl) = (((cong (x .#.) (ConcReduces x xs' ys)) \=> (sym $ ConsAddsOne x (xs' ++ ys))) \=> (cong S (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))) \=> (cong (+ (x .#. ys)) $ ConsAddsOne x xs')
-      ConcMerges _ ys x | Access acc | (Right ((x', xs') # Refl)) | (No xNEqX') = (((cong (x .#.) (ConcReduces x' xs' ys)) \=> (sym $ ConsKeepsRest x' (xs' ++ ys) x xNEqX')) \=> (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x=x'} {xs=xs'} in reflexive))) \=> (cong (+ (x .#. ys)) $ ConsKeepsRest x' xs' x xNEqX')
+      ConcMerges _ ys x | Access acc | (Right ((x, xs') # Refl)) | (Yes Refl) = (((cong (x .#.) ConcReduces) \=> sym ConsAddsOne) \=> (cong S (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x} {xs=xs'} in reflexive)))) \=> (cong (+ (x .#. ys)) ConsAddsOne)
+      ConcMerges _ ys x | Access acc | (Right ((x', xs') # Refl)) | (No x≠x') = (((cong (x .#.) ConcReduces) \=> (sym $ ConsKeepsRest x≠x')) \=> (ConcMerges xs' ys x | acc _ (rewrite SizedCons {x=x'} {xs=xs'} in reflexive))) \=> (cong (+ (x .#. ys)) $ ConsKeepsRest x≠x')
 
 export
 0 SizedConc : Container a c => (xs, ys: c) -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
 SizedConc xs ys with (sizeAccessible @{ContainerSized} xs)
   SizedConc xs ys | acc with (Match xs)
-    SizedConc _ ys | acc | (Left Refl) = cong (size @{ContainerSized}) (ConcNilLeftNeutral ys) \=> replace {p = \q => (size @{ContainerSized} ys = q + size @{ContainerSized} ys)} (sym $ SizedNil {c}) reflexive
-    SizedConc _ ys | Access acc | (Right ((x, xs') # Refl)) = cong (size @{ContainerSized}) (ConcReduces x xs' ys) \=> SizedCons \=>
+    SizedConc _ ys | acc | (Left Refl) = cong (size @{ContainerSized}) ConcNilLeftNeutral \=> replace {p = \q => (size @{ContainerSized} ys = q + size @{ContainerSized} ys)} (sym $ SizedNil {c}) reflexive
+    SizedConc _ ys | Access acc | (Right ((x, xs') # Refl)) = cong (size @{ContainerSized}) ConcReduces \=> SizedCons \=>
         (cong S (SizedConc xs' ys | acc _ $ eqLTE $ sym $ SizedCons {c})) \=> (cong (+ size @{ContainerSized} ys) (sym $ SizedCons {x} {xs=xs'}))
 
 export
@@ -109,28 +109,28 @@ yes x with (decEq x x)
   yes x | (No xNEqX) = void $ xNEqX Refl
 
 export
-no : DecEq a => {x, x': a} -> (xNEqX': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
-no xNEqX' with (decEq x x')
+no : DecEq a => {x, x': a} -> (x≠x': Not (x=x')) -> Not (x=x') # (\ctra => decEq x x' = No {prop=(x=x')} ctra)
+no x≠x' with (decEq x x')
   no x'NEqX' | (Yes Refl) = void $ x'NEqX' Refl
-  no _ | (No xNEqX') = xNEqX' # Refl
+  no _ | (No x≠x') = x≠x' # Refl
 
 export
 0 Next : {x: a} -> {xs: c} -> Container a c => {n: Nat} -> x .#. xs = n -> x .#. (Container.(::) x xs) = 1+n
-Next prf = (sym $ ConsAddsOne x xs) \=> (cong S prf)
+Next prf = sym ConsAddsOne \=> (cong S prf)
 
 export
 0 conLeftCons : Container a c => (x: a) -> {0 xs, ys, zs: c} -> xs ++ ys = zs -> (x::xs) ++ ys = x::zs
-conLeftCons x prf = (ConcReduces x xs ys) \=> (cong (x::) prf)
+conLeftCons x prf = ConcReduces \=> (cong (x::) prf)
 
 export
 0 findFirst : DecEq a => Container a c => (x: a) -> (xs: c) -> Either (x .#. xs = 0) ((c, c) # (\(l, r) => (x .#. l = 0, l ++ x::r = xs)))
 findFirst x xs with (sizeAccessible @{ContainerSized} xs)
   findFirst x xxs | acc with (Match xxs)
-    findFirst x _ | acc | (Left Refl) = Left (NilIsEmpty x)
+    findFirst x _ | acc | (Left Refl) = Left (NilIsEmpty)
     findFirst x _ | acc | (Right ((x', xs) # Refl)) with (decEq x x')
-      findFirst x _ | acc | (Right ((_, xs) # Refl)) | (Yes Refl) = Right (([], xs) # (NilIsEmpty x, ConcNilLeftNeutral (x::xs)))
+      findFirst x _ | acc | (Right ((_, xs) # Refl)) | (Yes Refl) = Right (([], xs) # (NilIsEmpty, ConcNilLeftNeutral))
       findFirst x _ | Access acc | (Right ((x', xs) # Refl)) | (No x≠x') =
         case (findFirst x xs | acc _ (replace {p = LTE (S (size @{ContainerSized} xs))} (sym $ SizedCons) reflexive)) of
-          (Left x∉xs) => Left ((sym $ ConsKeepsRest x' xs x x≠x') \=> x∉xs)
+          (Left x∉xs) => Left ((sym $ ConsKeepsRest x≠x') \=> x∉xs)
           (Right ((l, r) # (x∉l, Refl))) =>
-            Right ((x'::l, r) # ((sym $ ConsKeepsRest x' l x x≠x') \=> x∉l, ConcReduces {c} x' l (x::r)))
+            Right ((x'::l, r) # ((sym $ ConsKeepsRest x≠x') \=> x∉l, ConcReduces))

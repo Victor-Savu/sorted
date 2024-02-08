@@ -31,8 +31,28 @@ data Heap : LinearOrder a rel => (0 n: Nat) -> (0 h: Maybe' n a) -> Type where
     Balanced : (h: a) -> (0 hl: rel h l) -> (0 hr: rel h r) -> (left: Heap @{lo} (1+m) l) -> (right: Heap @{lo} (1+m) r) -> Heap @{lo} {rel} (3+m+m) h
     Imbalanced : (h: a) -> (0 hl: rel h l) -> (0 hr: rel h r) -> (left: Heap @{lo} (2 + m) l) -> (right: Heap @{lo} (1+m) r) -> Heap @{lo} {rel} (4+m+m) h
 
--- LinearOrder a rel => Container a (Heap {a} {rel} n h) where
+-- data HeapFamily : Type -> Type where
+--     MkHeapFamily : Heap {a} n h -> HeapFamily a
+
+-- DecEq a => LinearOrder a rel => Container a (Heap {a} {rel} n h) where
 --     x .#. Nil = 0
+--     x .#. Singleton h = case decEq x h of
+--         Left Ref => 1
+--         Right _ => 0
+--     x .#. Prick h s hs = 0
+--     x .#. Balanced h hl hr left right = 0
+--     x .#. Imbalanced h hl hr left right = 0
+
+--     Nil = Heap.Nil
+--     NilIsEmpty x = ?nie
+--     NilIsUnique x = ?niu
+
+--     x :: xs = ?cons
+--     ConsAddsOne = ?ca1
+--     ConsKeepsRest = ?ckr
+--     ConsBiinjective = MkBiinjective ?cbj
+
+--     ContainerSized = MkSized const n
 
 -- export
 -- fromList : (xs: List a) -> List a # HeapOf lo xs

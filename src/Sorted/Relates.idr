@@ -28,7 +28,7 @@ export
 
 export
 0 Nil : {0 x: a} -> Container a c => RelatesToAll {c} rel x Container.Nil
-Nil prf with (sym prf \=> (NilIsEmpty {c} guest))
+Nil prf with (sym prf \=> NilIsEmpty)
   Nil prf | _ impossible
 
 ||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
@@ -36,19 +36,19 @@ export
 0 (::) : {rel: Rel a} -> {xs: c} -> rel x y -> DecEq a => Container a c => RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
 (::) relXY f prf with (decEq guest y)
   (::) relXGuest f prf | (Yes Refl) = relXGuest
-  (::) relXY f prf | (No guestNEqY) = f $ ConsKeepsRest y xs guest guestNEqY \=> prf
+  (::) relXY f prf | (No guestNEqY) = f $ ConsKeepsRest guestNEqY \=> prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 export
 0 tail : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => RelatesToAll rel e xs
 tail f prf with (decEq guest x)
-  tail f prf | (Yes Refl) = f $ sym $ ConsAddsOne guest xs
-  tail f prf | (No guestNEqX) = f $ (sym $ ConsKeepsRest x xs guest guestNEqX) \=> prf
+  tail f prf | (Yes Refl) = f $ sym $ ConsAddsOne
+  tail f prf | (No guestNEqX) = f $ (sym $ ConsKeepsRest guestNEqX) \=> prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 export
 0 head : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => rel e x
-head f = f $ sym $ ConsAddsOne x xs
+head f = f $ sym $ ConsAddsOne
 
 0 oneMustBeNonZero : a + b = S n -> Either (Nat # \k => a = S k) (Nat # \k => b = S k)
 oneMustBeNonZero {a = 0} {b = 0} prf = void $ SIsNotZ $ sym prf

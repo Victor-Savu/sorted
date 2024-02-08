@@ -36,7 +36,7 @@ Iso std po -@-> po' = Iso std ((po' \=> po) @{transitiveIsPermutationOf})
 
 export
 [uninhabitedIsSortingOfEmptyCons] {0 x:a} -> {0 xs: c} -> LinearOrder a rel => Container a c => Uninhabited (IsSortingOf {rel} {c} [] (x::xs)) where
-    uninhabited (Iso sortedXXs (Ipo isPermutationOfNilXXs)) = void $ SIsNotZ $ ((ConsAddsOne x xs) \=> (sym $ isPermutationOfNilXXs x)) \=> (NilIsEmpty {c} x)
+    uninhabited (Iso sortedXXs (Ipo isPermutationOfNilXXs)) = void $ SIsNotZ $ (ConsAddsOne \=> (sym $ isPermutationOfNilXXs x)) \=> NilIsEmpty
 
 export
 DecEq a => LinearOrder a rel => Container a c => Transitive c (IsSortingOf {rel}) where
@@ -62,9 +62,9 @@ cons acc x (f # prf) with (Match f)
             (Refl, Iso sXs' pXs') =>
               let
                 oioi = (replace {p = \q => IsPermutationOf (x::y::xs) q}
-                  (conLeftCons y $ conLeftCons x $ ConcNilLeftNeutral xs)
+                  (conLeftCons y $ conLeftCons x ConcNilLeftNeutral)
                   (replace {p = \q => IsPermutationOf q (((y :: ((x :: (Container.Nil {c})) {c})) {c}) ++ xs)}
-                    (conLeftCons x $ conLeftCons y $ ConcNilLeftNeutral xs)
+                    (conLeftCons x $ conLeftCons y ConcNilLeftNeutral)
                     (Ipo (swapIsPermutation {x} {y}) ++ reflexive @{reflexiveIsPermutationOf} {x=xs})) \=>
                       (y :: pXs')) @{transitiveIsPermutationOf}
                 sol = (((x :: pYXs) \=> oioi) @{transitiveIsPermutationOf} )
@@ -85,8 +85,8 @@ export
 
 isoPlus : DecEq a => LinearOrder a rel => Container a c => (0 acc: SizeAccessible @{SizedPairContainers} (left, right)) -> c # (IsSortingOf {rel} left) -> c # (IsSortingOf {rel}  right) -> c # (IsSortingOf {rel} (left ++ right))
 isoPlus acc (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with (Match sortedLeft, Match sortedRight)
-  isoPlus acc (_ # Iso _ isPermutationOfLeft) (_ # Iso _ isPermutationOfRight) | (Left Refl, Left Refl) = [] # Iso [] (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral {c} [] in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
-  isoPlus acc (_ # Iso _ isPermutationOfLeft) (sortedRight # Iso isSortedRight isPermutationOfRight) | (Left Refl, Right _) = sortedRight # Iso isSortedRight (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral sortedRight in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
+  isoPlus acc (_ # Iso _ isPermutationOfLeft) (_ # Iso _ isPermutationOfRight) | (Left Refl, Left Refl) = [] # Iso [] (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral {c} {xs=[]} in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
+  isoPlus acc (_ # Iso _ isPermutationOfLeft) (sortedRight # Iso isSortedRight isPermutationOfRight) | (Left Refl, Right _) = sortedRight # Iso isSortedRight (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral {xs=sortedRight} in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
   isoPlus acc (sortedLeft # Iso isSortedLeft isPermutationOfLeft) (_ # Iso _ isPermutationOfRight) | (Right _, Left Refl) = sortedLeft # Iso isSortedLeft (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilRightNeutral sortedLeft in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
   isoPlus acc (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) | (Right ((l, ls) # lLsEqSortedLeft), Right ((r, rs) # rRsEqSortedRight)) with (leanLeft {rel} l r)
     isoPlus (Access acc) (_ # Iso isSortedLeft isPermutationOfLeft) (sortedRight # isSortingOfRight) | (Right ((l, ls) # Refl), Right ((_, _) # _)) | (Left _) =
@@ -97,7 +97,7 @@ isoPlus acc (sortedLeft # isSortingOfLeft) (sortedRight # isSortingOfRight) with
           let
             Iso srtd perm = prf
           in
-            Iso srtd ((replace {p = IsPermutationOf (left ++ right)} (ConcReduces l ls right) (isPermutationOfLeft ++ reflexive @{reflexiveIsPermutationOf} {x=right}) \=> perm) @{transitiveIsPermutationOf})
+            Iso srtd ((replace {p = IsPermutationOf (left ++ right)} ConcReduces (isPermutationOfLeft ++ reflexive @{reflexiveIsPermutationOf} {x=right}) \=> perm) @{transitiveIsPermutationOf})
     isoPlus (Access acc) (sortedLeft # isSortingOfLeft) (_ # Iso isSortedRight isPermutationOfRight) | (Right ((_, _) # _), Right ((r, rs) # Refl)) | (Right _) =
       let
         answer # prf = Sorted.IsSortingOf.(::) r (isoPlus (acc _ $ eqLTE $ (plusSuccRightSucc _ _ \=> cong (size @{ContainerSized} left +) (sym SizedCons \=> sym (PermutationHasSameSize isPermutationOfRight)))) (sortedLeft # isSortingOfLeft) (rs # Iso (tail {ysIsCons=Refl} isSortedRight) (reflexive @{reflexiveIsPermutationOf})))

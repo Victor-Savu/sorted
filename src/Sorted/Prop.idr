@@ -18,8 +18,19 @@ arg (x # _) = x
 ||| An alternative notation for Prop
 public export
 (#) : (a: Type) -> (a-> Type) -> Type
-(#) a f = Prop a f
+a # p = Prop a p
 
 export
 propMap : (f: Prop a p) -> (0 m: let (x # px) = f in p x -> q x) -> (Prop a q # (\(x' # _) => let (x # _) = f in x'=x))
 propMap (x # px) m = (x # m px) # Refl
+
+infixl 4 ##
+
+namespace CoProp
+    public export
+    data CoProp: (a: Type) -> (a -> Type) -> Type where
+        (##) : (0 idx: a) -> (val: p idx) -> CoProp a p
+
+public export
+(##) : (a: Type) -> (a->Type) -> Type
+idx ## p = CoProp idx p

@@ -38,20 +38,20 @@ split' xs acc with (Match xs)
         case (split' ttxs (acc _ (LTESucc ((lteSuccRight $ eqLTE Refl) \=> eqLTE (sym SizedCons)) \=> eqLTE (sym SizedCons \=> cong (size @{ContainerSized}) ((cong (x::) x'ttxs≈txs \=> xtxs≈xs)))))) of
             SplitNil => SplitPair [x] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
                 replace {p = IsPermutationOf xs}
-                  (sym (ConcReduces _ _ _ \=> cong (x::) (ConcNilLeftNeutral _) \=> (replace {p = \q => x :: q = xs} (sym x'ttxs≈txs) xtxs≈xs)))
+                  (sym (ConcReduces \=> cong (x::) ConcNilLeftNeutral \=> (replace {p = \q => x :: q = xs} (sym x'ttxs≈txs) xtxs≈xs)))
                   (reflexive @{reflexiveIsPermutationOf}))
             SplitOne x'' =>
                 SplitPair [x,x''] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
                   ((replace {p = IsPermutationOf xs} (sym xtxs≈xs \=> cong (x::) (sym x'ttxs≈txs)) (reflexive @{reflexiveIsPermutationOf}) \=>
                     (x :: Ipo swapIsPermutation)) @{transitiveIsPermutationOf} \=>
                       replace {p = IsPermutationOf [x,x'',x']}
-                        (cong (x::) (cong (x''::) (sym $ ConcNilLeftNeutral _) \=> sym (ConcReduces _ _ _)) \=> sym (ConcReduces _ _ _))
+                        (cong (x::) (cong (x''::) (sym ConcNilLeftNeutral) \=> sym ConcReduces) \=> sym ConcReduces)
                         (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
             SplitPair ls ls≠Nil rs rs≠Nil p =>
                 SplitPair (x::ls) (uninhabited @{uninhabitedConsIsNil}) (x'::rs) (uninhabited @{uninhabitedConsIsNil}) (
                   ((replace {p = IsPermutationOf xs} (sym (cong (x::) x'ttxs≈txs \=> xtxs≈xs)) (reflexive @{reflexiveIsPermutationOf}) \=> x :: x' :: p)  @{transitiveIsPermutationOf} \=>
                     (((pong {p=(x::)} (x::) (symmetric @{symmetricIsPermutationOf} (shiftPermutation $ reflexive @{reflexiveIsPermutationOf}))) \=>
-                      replace {p = IsPermutationOf _} (sym $ ConcReduces _ _ _) (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
+                      replace {p = IsPermutationOf _} (sym ConcReduces) (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
         
 
 export
