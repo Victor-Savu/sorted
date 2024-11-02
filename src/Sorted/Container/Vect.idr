@@ -10,12 +10,9 @@ import public Sorted.Container
 
 %default total
 
-
+export
 data VectFamily : Type -> Type where
   MkVectFamily : Vect n a -> VectFamily a
-
-Sized (VectFamily a) where
-    size (MkVectFamily xs) = length xs
 
 cnt : DecEq a => (x: a) -> (xs: Vect n a) -> Nat
 cnt x [] = 0

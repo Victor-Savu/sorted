@@ -74,10 +74,11 @@ export
 (::) : (x: a) -> LinearOrder a rel => Container a c => (xs: Prop c (IsSortingOf {c} {rel} orig)) -> DecEq a => c # (IsSortingOf {c} {rel} (x::orig))
 (::) x xs = cons (sizeAccessible @{ContainerSized} orig) x xs
 
+public export
 leanLeft : DecEq a => LinearOrder a rel => (x: a) -> (y: a) -> Either (rel x y) (rel y x)
 leanLeft x y with (decEq x y)
   leanLeft x x | (Yes Refl) = Left reflexive
-  leanLeft x y | (No xNEqY) = connex xNEqY
+  leanLeft x y | (No x≠y) = connex x≠y
 
 export
 [SizedPairContainers] Container a c => Sized (Pair c c) where

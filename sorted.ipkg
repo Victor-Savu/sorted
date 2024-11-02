@@ -13,13 +13,15 @@ authors = "Victor-Nicolae Savu"
 -- langversion
 
 -- packages to add to search path
-depends = linear, contrib
+depends = linear, contrib, algebra
 
 -- modules to install
 modules =
     Sorted,
     Sorted.Container,
+    Sorted.Container.Heap,
     Sorted.Container.List,
+    Sorted.Container.Vect,
     Sorted.InsertionSort,
     Sorted.IsPermutationOf,
     Sorted.IsSortingOf,
