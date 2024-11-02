@@ -369,7 +369,6 @@ cntTooSmall x x≠h x≤h (Imbalanced h h≤l h≤r left right) with (decEq x h)
 --     uninhabited {xs = (Balanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
 --     uninhabited {xs = (Imbalanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
 
-covering
 0 ConsAddsOne : DecEq a => LinearOrder a rel => (xs: Heap n h) -> forall x. (1 + cnt {rel} {n} x xs) = cnt {rel} {n=S n} x (Heap.(::) {rel} x xs)
 ConsAddsOne [] = rewrite decEqSelfIsYes {x} in Refl
 ConsAddsOne (Singleton h) with (decEq x h)
