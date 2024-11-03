@@ -419,8 +419,12 @@ ConsAddsOne (Balanced h {l} {r} h≤l h≤r left right) with (decEq x h)
       ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) with (connex {rel} h≠x)
         ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) with (decEq x l)
           ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) with (decEq l h)
-            ConsAddsOne (Balanced l {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (Yes Refl) = ?gfdkjgk_rhs_1_rhs1_0_rhs0_0_rhs0_0
-            ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) = ?gfdkjgk_rhs_1_rhs1_0_rhs0_0_rhs0_1
+            ConsAddsOne (Balanced l {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (Yes Refl) = void $ x≠h Refl
+            ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) with (connex {rel} x≠h)
+              ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) | (Left x≤h) = void $ x≠h (antisymmetric x≤h h≤x)
+              ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) | (Right h≤''x) with (connex {rel} l≠h)
+                ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) | (Right h≤''x) | (Left l≤h) = void $ l≠h (antisymmetric l≤h h≤l)
+                ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (Yes Refl) | (No l≠h) | (Right h≤''x) | (Right h≤'l) = cong (+ cnt l right) $ ConsAddsOne {x=l} left
           ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (No x≠l) with (connex {rel} x≠l)
             ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (No x≠l) | (Left x≤l) with (decEq x h)
               ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (No x≠h) | (Right h≤x) | (No h≠x) | (Left h≤'x) | (No x≠l) | (Left x≤l) | (Yes Refl) = void $ x≠h Refl
