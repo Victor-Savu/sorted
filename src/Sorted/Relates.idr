@@ -14,11 +14,11 @@ public export
 RelatesToAll : {a: Type} -> Container a c => Rel a -> a -> c -> Type
 RelatesToAll relates socialButterfly party = {guest: a} -> {n: Nat} -> guest .#. party = (S n) -> relates socialButterfly guest
 
-infixr 4 -@->
+export infixr 4 -@->
 
 ||| If x relates to all the elements of xs , then it relates to any permutation ys of the elements of xs
 export
-(-@->) : {x: a} -> {xs, ys: c} -> Container a c => RelatesToAll rel x xs -> (xs ~@~ ys) -> DecEq a => RelatesToAll rel x ys
+(-@->) : {x: a} -> {xs, ys: c} -> Container a c => RelatesToAll rel x xs -> (xs ~@~ ys) -> RelatesToAll rel x ys
 (-@->) f (Ipo g) y = f (g guest \=> y)
 
 
@@ -27,37 +27,37 @@ export
 %hide Stream.(::)
 
 export
-0 Nil : {0 x: a} -> Container a c => RelatesToAll {c} rel x Container.Nil
-Nil prf with (sym prf \=> NilIsEmpty)
+Nil : {0 x: a} -> Container a c => RelatesToAll {c} rel x Container.Nil
+Nil prf with (sym prf \=> ∀x‥x⋕【】≐0)
   Nil prf | _ impossible
 
 ||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
 export
-0 (::) : {rel: Rel a} -> {xs: c} -> rel x y -> DecEq a => Container a c => RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
-(::) relXY f prf with (decEq guest y)
+(::) : {y: a} -> {rel: Rel a} -> {xs: c} -> rel x y -> Container a c => RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
+(::) relXY f prf with (decEq @{DecEqElement {c}} guest y)
   (::) relXGuest f prf | (Yes Refl) = relXGuest
   (::) relXY f prf | (No guestNEqY) = f $ ConsKeepsRest guestNEqY \=> prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 export
-0 tail : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => RelatesToAll rel e xs
-tail f prf with (decEq guest x)
+tail : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> RelatesToAll rel e xs
+tail f prf with (decEq @{DecEqElement {c}} guest x)
   tail f prf | (Yes Refl) = f $ sym $ ConsAddsOne
   tail f prf | (No guestNEqX) = f $ (sym $ ConsKeepsRest guestNEqX) \=> prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 export
-0 head : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> DecEq a => rel e x
+head : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> rel e x
 head f = f $ sym $ ConsAddsOne
 
-0 oneMustBeNonZero : a + b = S n -> Either (Nat # \k => a = S k) (Nat # \k => b = S k)
+oneMustBeNonZero : {a, b: Nat} -> a + b = S n -> (k:Nat ** Either (a = S k) (b = S k))
 oneMustBeNonZero {a = 0} {b = 0} prf = void $ SIsNotZ $ sym prf
-oneMustBeNonZero {a = 0} {b = (S k)} prf = Right (k # Refl)
-oneMustBeNonZero {a = (S k)} {b = b} prf = Left (k # Refl)
+oneMustBeNonZero {a = 0} {b = (S k)} prf = (k ** Right Refl)
+oneMustBeNonZero {a = (S k)} {b = b} prf = (k ** Left Refl)
 
 ||| If e relates to all the elements in the list xs and to all the elements in the list ys then it relates to all the elements in the list xs++ys.
 export
-0 (++) : {xs, ys: c} -> Container a c => RelatesToAll rel e xs -> RelatesToAll rel e ys -> DecEq a => RelatesToAll rel e (xs++ys)
-(++) eXs eYs prf with (oneMustBeNonZero ((sym $ ConcMerges xs ys guest) \=> prf))
-  (++) eXs eYs prf | (Left (_ # x)) = eXs x
-  (++) eXs eYs prf | (Right (_ # y)) = eYs y
+(++) : {xs, ys: c} -> Container a c => RelatesToAll rel e xs -> RelatesToAll rel e ys -> RelatesToAll rel e (xs++ys)
+(++) e❤xs e❤ys guest∈xs⨢⨢ys with (oneMustBeNonZero (sym ConcAddsCounts \=> guest∈xs⨢⨢ys))
+  (++) e❤xs e❤ys guest∈xs⨢⨢ys | (_ ** (Left guest∈xs)) = e❤xs guest∈xs
+  (++) e❤xs e❤ys guest∈xs⨢⨢ys | (_ ** (Right guest∈ys)) = e❤ys guest∈ys

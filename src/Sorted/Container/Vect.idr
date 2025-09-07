@@ -4,6 +4,7 @@ import Control.Function
 import Control.WellFounded
 import Data.Nat
 import Data.Vect
+import Data.Void
 import Decidable.Equality
 
 import public Sorted.Container
@@ -20,31 +21,41 @@ cnt x (x' :: xs) with (decEq x x')
   cnt x (x :: xs) | (Yes Refl) = 1 + cnt x xs
   cnt x (x' :: xs) | (No _) = cnt x xs
 
+concAddsCnt : DecEq a => (x: a) -> (xs: Vect m a) -> (ys: Vect n a) -> cnt x (xs ++ ys) = cnt x xs + cnt x ys
+concAddsCnt x [] ys = Refl
+concAddsCnt x (x' :: xs) ys with (decEq x x')
+  concAddsCnt x (x :: xs) ys | (Yes Refl) = cong S $ concAddsCnt x xs ys
+  concAddsCnt x (x' :: xs) ys | (No _) = concAddsCnt x xs ys
+
 export
 DecEq a => Container a (VectFamily a) where
     x .#. (MkVectFamily xs) = cnt x xs
     
-    Nil = MkVectFamily []
-    NilIsEmpty = Refl
-    NilIsUnique {xs = (MkVectFamily [])} uniq = Refl
-    NilIsUnique {xs = (MkVectFamily (x :: xs))} uniq =
-        void $ SIsNotZ $ ((rewrite yes x in cong S $ plusZeroLeftNeutral $ (x .#. (MkVectFamily xs))) \=> (uniq {x}))
+    [] = MkVectFamily []
 
-    x :: (MkVectFamily xs) = MkVectFamily (x::xs)
+    IsNil (MkVectFamily []) = Yes Refl
+    IsNil (MkVectFamily (x :: xs)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
 
-    ConsAddsOne {x} {xs=MkVectFamily xs} = rewrite yes x in Refl
-    ConsKeepsRest {xs=MkVectFamily xs} x'≠x = let _ # p = no x'≠x in rewrite p in Refl
-    ConsBiinjective = MkBiinjective impl where
-        impl : {x: a} -> {xs, ys: VectFamily a} -> Container.(::) x xs = Container.(::) y ys -> (x = y, xs = ys)
-        impl {x=x} {xs=(MkVectFamily ys)} {ys=(MkVectFamily ys)} Refl = (Refl, Refl)
+    ∀x‥x⋕【】≐0 = Refl
 
-    (MkVectFamily xs) ++ (MkVectFamily ys) = MkVectFamily (xs++ys)
-    ConcNilLeftNeutral {xs=MkVectFamily xs} = Refl
-    ConcReduces {xs=MkVectFamily xs} {ys=MkVectFamily ys} = Refl
+    x :: MkVectFamily ys = MkVectFamily (x :: ys)
+
+    Cons with (decEq x' x)
+      Cons {xs = MkVectFamily xslist} | (Yes Refl) = Left (Refl, rewrite yes x' in Refl)
+      Cons {xs = MkVectFamily xslist} | (No x'≠x) = Right (x'≠x, let Element _ p = no x'≠x in rewrite p in Refl)
+
+    ConsBisurjective {x∷xs = (MkVectFamily [])} x∷xs≠【】 = void $ x∷xs≠【】 Refl
+    ConsBisurjective {x∷xs = (MkVectFamily (x :: xs))} x∷xs≠【】 = Bievidence x (MkVectFamily xs) Refl
+
+    MkVectFamily xs ++ MkVectFamily ys = MkVectFamily (xs ++ ys)
+
+    ConcAddsCounts {xs = MkVectFamily xs} {ys = MkVectFamily ys} = concAddsCnt x xs ys
 
     ContainerSized = MkSized (\(MkVectFamily xs) => length xs)
-    SizedNil = Refl
-    SizedCons {xs=MkVectFamily xs} = Refl
 
-    Match (MkVectFamily []) = Left Refl
-    Match (MkVectFamily (x :: xs)) = Right ((x, MkVectFamily xs) # Refl)
+    ⋕⎨【】⎬≐0 = Refl
+
+    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {xs = MkVectFamily xs} = Refl
+
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily []} = Refl
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily (x::xs)} = absurdity the⋕⎨x∷xs⎬≐0

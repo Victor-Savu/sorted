@@ -17,16 +17,16 @@ depends = linear, contrib, algebra
 
 -- modules to install
 modules =
+    Data.Heap,
     Sorted,
     Sorted.Container,
-    Sorted.Container.Heap,
+    -- Sorted.Container.Heap,
     Sorted.Container.List,
     Sorted.Container.Vect,
-    Sorted.InsertionSort,
+    -- Sorted.InsertionSort,
+    Sorted.MergeSort,
     Sorted.IsPermutationOf,
     Sorted.IsSortingOf,
-    Sorted.MergeSort,
-    Sorted.Prop,
     Sorted.Relates,
     Sorted.Sorted
 

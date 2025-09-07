@@ -7,7 +7,6 @@ import Data.Nat
 
 import public Sorted.Container
 import public Sorted.IsPermutationOf
-import public Sorted.Prop
 import public Sorted.Relates
 import public Sorted.Sorted
 import public Sorted.IsSortingOf
@@ -29,29 +28,29 @@ data Split : Container a c => c -> Type where
 
 
 split' : DecEq a => Container a c => (xs : c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Split xs
-split' xs acc with (Match xs)
-  split' _ acc | (Left Refl) = SplitNil
-  split' xs acc | (Right ((x, txs) # xtxs≈xs)) with (Match txs)
-    split' xs acc | (Right ((x, txs) # xtxs≈xs)) | (Left txs≈Nil) =
-        replace {p = Split} (replace {p = \q => x :: q = xs} txs≈Nil xtxs≈xs) (SplitOne x)
-    split' xs (Access acc) | (Right ((x, txs) # xtxs≈xs)) | (Right ((x', ttxs) # x'ttxs≈txs)) =
-        case (split' ttxs (acc _ (LTESucc ((lteSuccRight $ eqLTE Refl) \=> eqLTE (sym SizedCons)) \=> eqLTE (sym SizedCons \=> cong (size @{ContainerSized}) ((cong (x::) x'ttxs≈txs \=> xtxs≈xs)))))) of
-            SplitNil => SplitPair [x] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
-                replace {p = IsPermutationOf xs}
-                  (sym (ConcReduces \=> cong (x::) ConcNilLeftNeutral \=> (replace {p = \q => x :: q = xs} (sym x'ttxs≈txs) xtxs≈xs)))
-                  (reflexive @{reflexiveIsPermutationOf}))
-            SplitOne x'' =>
-                SplitPair [x,x''] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
-                  ((replace {p = IsPermutationOf xs} (sym xtxs≈xs \=> cong (x::) (sym x'ttxs≈txs)) (reflexive @{reflexiveIsPermutationOf}) \=>
-                    (x :: Ipo swapIsPermutation)) @{transitiveIsPermutationOf} \=>
-                      replace {p = IsPermutationOf [x,x'',x']}
-                        (cong (x::) (cong (x''::) (sym ConcNilLeftNeutral) \=> sym ConcReduces) \=> sym ConcReduces)
-                        (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
-            SplitPair ls ls≠Nil rs rs≠Nil p =>
-                SplitPair (x::ls) (uninhabited @{uninhabitedConsIsNil}) (x'::rs) (uninhabited @{uninhabitedConsIsNil}) (
-                  ((replace {p = IsPermutationOf xs} (sym (cong (x::) x'ttxs≈txs \=> xtxs≈xs)) (reflexive @{reflexiveIsPermutationOf}) \=> x :: x' :: p)  @{transitiveIsPermutationOf} \=>
-                    (((pong {p=(x::)} (x::) (symmetric @{symmetricIsPermutationOf} (shiftPermutation $ reflexive @{reflexiveIsPermutationOf}))) \=>
-                      replace {p = IsPermutationOf _} (sym ConcReduces) (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
+-- split' xs acc with (Match xs)
+--   split' _ acc | (Left Refl) = SplitNil
+--   split' xs acc | (Right ((x, txs) # xtxs≈xs)) with (Match txs)
+--     split' xs acc | (Right ((x, txs) # xtxs≈xs)) | (Left txs≈Nil) =
+--         replace {p = Split} (replace {p = \q => x :: q = xs} txs≈Nil xtxs≈xs) (SplitOne x)
+--     split' xs (Access acc) | (Right ((x, txs) # xtxs≈xs)) | (Right ((x', ttxs) # x'ttxs≈txs)) =
+--         case (split' ttxs (acc _ (LTESucc ((lteSuccRight $ eqLTE Refl) \=> eqLTE (sym SizedCons)) \=> eqLTE (sym SizedCons \=> cong (size @{ContainerSized}) ((cong (x::) x'ttxs≈txs \=> xtxs≈xs)))))) of
+--             SplitNil => SplitPair [x] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
+--                 replace {p = IsPermutationOf xs}
+--                   (sym (ConcReduces \=> cong (x::) ConcNilLeftNeutral \=> (replace {p = \q => x :: q = xs} (sym x'ttxs≈txs) xtxs≈xs)))
+--                   (reflexive @{reflexiveIsPermutationOf}))
+--             SplitOne x'' =>
+--                 SplitPair [x,x''] (uninhabited @{uninhabitedConsIsNil}) [x'] (uninhabited @{uninhabitedConsIsNil}) (
+--                   ((replace {p = IsPermutationOf xs} (sym xtxs≈xs \=> cong (x::) (sym x'ttxs≈txs)) (reflexive @{reflexiveIsPermutationOf}) \=>
+--                     (x :: Ipo swapIsPermutation)) @{transitiveIsPermutationOf} \=>
+--                       replace {p = IsPermutationOf [x,x'',x']}
+--                         (cong (x::) (cong (x''::) (sym ConcNilLeftNeutral) \=> sym ConcReduces) \=> sym ConcReduces)
+--                         (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
+--             SplitPair ls ls≠Nil rs rs≠Nil p =>
+--                 SplitPair (x::ls) (uninhabited @{uninhabitedConsIsNil}) (x'::rs) (uninhabited @{uninhabitedConsIsNil}) (
+--                   ((replace {p = IsPermutationOf xs} (sym (cong (x::) x'ttxs≈txs \=> xtxs≈xs)) (reflexive @{reflexiveIsPermutationOf}) \=> x :: x' :: p)  @{transitiveIsPermutationOf} \=>
+--                     (((pong {p=(x::)} (x::) (symmetric @{symmetricIsPermutationOf} (shiftPermutation $ reflexive @{reflexiveIsPermutationOf}))) \=>
+--                       replace {p = IsPermutationOf _} (sym ConcReduces) (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
         
 
 export
@@ -64,26 +63,27 @@ lteSum LTEZero (LTESucc x) = LTESucc (x \=> (lteAddRight _) \=> eqLTE (plusCommu
 lteSum (LTESucc x) LTEZero = LTESucc (eqLTE (plusZeroRightNeutral _) \=> x \=> lteAddRight _)
 lteSum (LTESucc x) (LTESucc y) = LTESucc (eqLTE (sym $ plusSuccRightSucc _ _) \=> LTESucc (lteSum x y) \=> eqLTE ((plusSuccRightSucc _ _)))
 
-0 atLeastOneInNonEmpty : Container a c => (xs = [] -> Void) -> LTE 1 (size @{ContainerSized {c}} xs)
-atLeastOneInNonEmpty xs≠Nil with (Match xs)
-  atLeastOneInNonEmpty xs≠Nil | (Left Refl) = void $ xs≠Nil Refl
-  atLeastOneInNonEmpty xs≠Nil | (Right ((x, xs') # Refl)) = LTESucc LTEZero \=> eqLTE (sym $ SizedCons)
+0 atLeastOneInNonEmpty : Container a c => ( x∷xs = [] -> Void) -> LTE 1 (size @{ContainerSized {c}} x∷xs)
+atLeastOneInNonEmpty x∷xs≠【】 =
+  let
+    ⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = (sym $ cong ((size @{ContainerSized})) (ConsBisurjective x∷xs≠【】).biexists) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+  in rewrite ⋕⎨x∷xs⎬≐S⋕⎨xs⎬ in LTESucc LTEZero
 
-mergeSort' : DecEq a => LinearOrder a rel => Container a c => (xs: c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> (c) # (IsSortingOf {rel} xs)
+mergeSort' : DecEq a => LinearOrder a rel => Sequence a c => (xs: c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Subset (c) (IsSortingOf {rel} xs)
 mergeSort' xs acc with (split xs)
-  mergeSort' _ (Access acc) | SplitNil = [] # []
-  mergeSort' _ (Access acc) | SplitOne x = [x] # (Iso (Singleton x) (Ipo (\_ => Refl)))
+  mergeSort' _ (Access acc) | SplitNil = Element [] []
+  mergeSort' _ (Access acc) | SplitOne x = Element [x] (Iso (Singleton x) (Ipo (\_ => Refl)))
   mergeSort' xs (Access acc) | SplitPair ls ls≠Nil rs rs≠Nil p =
     let
-      left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc _ _ \=> (plusCommutative _ _)))))
-      right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc _ _))))
-      xs' # iso = left ++ right
+      left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc \=> (plusCommutative _ _)))))
+      right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc))))
+      -- Element xs' iso = left ++ right
     in
-      xs' # (iso -@-> p)
+      ?jagskdjha -- Element xs' (iso -@-> p)
 
 ||| Sort a list in accordance to the linear order induced by rel.
 ||| This is an implementation of the merge sort algorithm.
 export
-mergeSort : DecEq a => LinearOrder a rel => Container a c => (xs: c) -> (c) # (IsSortingOf {rel} xs)
+mergeSort : DecEq a => LinearOrder a rel => Sequence a c => (xs: c) -> Subset (c) (IsSortingOf {rel} xs)
 mergeSort xs = mergeSort' xs (sizeAccessible @{ContainerSized} xs)
 

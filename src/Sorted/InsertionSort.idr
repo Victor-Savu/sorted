@@ -7,7 +7,6 @@ import Decidable.Equality
 import Sorted.IsSortingOf
 import Sorted.IsPermutationOf
 import Sorted.Sorted
-import Sorted.Prop
 import Sorted.Relates
 
 %default total
