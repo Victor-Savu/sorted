@@ -85,11 +85,11 @@ Nil : LinearOrder a rel => Sequence a c => IsSortingOf {rel} {c} (Container.Nil 
 --   leanLeft x x | (Yes Refl) = Left reflexive
 --   leanLeft x y | (No x≠y) = connex x≠y
 
--- export
--- [SizedPairContainers] Container a c => Sized (Pair c c) where
---   size (x,y) = size @{ContainerSized} x + size @{ContainerSized} y
+export
+[SizedPairContainers] Container a c => Sized (Pair c c) where
+  size (x,y) = size @{ContainerSized} x + size @{ContainerSized} y
 
--- isoPlus : DecEq a => LinearOrder a rel => Sequence a c => (0 acc: SizeAccessible @{SizedPairContainers} (left, right)) -> Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
+isoPlus : DecEq a => LinearOrder a rel => Sequence a c => (0 acc: SizeAccessible @{SizedPairContainers} (left, right)) -> Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
 -- isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight) = ?help
 
 -- with (Match sortedLeft, Match sortedRight)
@@ -116,10 +116,10 @@ Nil : LinearOrder a rel => Sequence a c => IsSortingOf {rel} {c} (Container.Nil 
 --           in
 --             Iso srtd ((shiftPermutation isPermutationOfRight \=> perm) @{transitiveIsPermutationOf})
             
--- ||| Mergig the sorting of left and right produces the sorting of left ++ right
--- export
--- (++) : DecEq a => LinearOrder a rel => Sequence a c => Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
--- (Element sortedLeft isSortingOfLeft) ++ (Element sortedRight isSortingOfRight) = isoPlus (sizeAccessible @{SizedPairContainers} (left, right)) (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight)
+||| Mergig the sorting of left and right produces the sorting of left ++ right
+export
+(++) : DecEq a => LinearOrder a rel => Sequence a c => Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
+(Element sortedLeft isSortingOfLeft) ++ (Element sortedRight isSortingOfRight) = isoPlus (sizeAccessible @{SizedPairContainers} (left, right)) (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight)
 
 -- aiso : DecEq a => (xs: List a) -> (ys: List a) -> (lo: LinearOrder a rel) => (isoXY: IsSortingOf lo xs ys) -> (isoYX : IsSortingOf lo ys xs) -> xs = ys
 -- aiso [] [] isoXY isoYX = Refl

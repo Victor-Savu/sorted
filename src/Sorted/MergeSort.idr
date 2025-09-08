@@ -77,9 +77,9 @@ mergeSort' xs acc with (split xs)
     let
       left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes \=> (plusCommutative _ _)))))
       right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes))))
-      -- Element xs' iso = left ++ right
+      Element xs' iso = left ++ right
     in
-      ?jagskdjha -- Element xs' (iso -@-> p)
+      Element xs' (iso -@-> p)
 
 ||| Sort a list in accordance to the linear order induced by rel.
 ||| This is an implementation of the merge sort algorithm.
