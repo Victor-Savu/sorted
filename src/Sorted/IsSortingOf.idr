@@ -90,7 +90,13 @@ export
   size (x,y) = size @{ContainerSized} x + size @{ContainerSized} y
 
 isoPlus : DecEq a => LinearOrder a rel => Sequence a c => (0 acc: SizeAccessible @{SizedPairContainers} (left, right)) -> Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
--- isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight) = ?help
+isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight) = case IsNil sortedLeft of
+  Yes Refl => Element sortedRight (
+    let
+      (Iso sortedRightIsSorted isPermutationOfRight) = isSortingOfRight
+      (Iso _ isPermutationOfLeft) = isSortingOfLeft
+    in Iso sortedRightIsSorted ?haksa_1)
+  No sortedLeft≠【】 => ?help_1
 
 -- with (Match sortedLeft, Match sortedRight)
 --   isoPlus acc (_ # Iso _ isPermutationOfLeft) (_ # Iso _ isPermutationOfRight) | (Left Refl, Left Refl) = [] # Iso [] (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral {c} {xs=[]} in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})

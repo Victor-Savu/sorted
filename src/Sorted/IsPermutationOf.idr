@@ -68,18 +68,18 @@ export
     occ_xz_yt : (e : a) -> e .#. (x ++ z) = e .#. (y ++ t)
 
 
-namespace Permutation
-  export
-  PNil : Container a c => IsPermutationOf {c} [] []
-  PNil = Ipo (\_ => Refl)
+-- namespace Permutation
+--   export
+--   PNil : Container a c => IsPermutationOf {c} [] []
+--   PNil = Ipo (\_ => Refl)
 
-  export
-  (::) : {xs, ys: c} -> (x: a) -> Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
-  (::) x (Ipo occ) = Ipo occ' where
-      occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
-      occ' e with (decEq @{DecEqElement {c}} e x)
-        occ' _ | (Yes Refl) = (sym ConsAddsOne \=> cong S (occ x)) \=> ConsAddsOne
-        occ' e | (No e≠x) = (sym (ConsKeepsRest e≠x) \=> occ e) \=> ConsKeepsRest e≠x
+--   export
+--   (::) : {xs, ys: c} -> (x: a) -> Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
+--   (::) x (Ipo occ) = Ipo occ' where
+--       occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
+--       occ' e with (decEq @{DecEqElement {c}} e x)
+--         occ' _ | (Yes Refl) = (sym ConsAddsOne \=> cong S (occ x)) \=> ConsAddsOne
+--         occ' e | (No e≠x) = (sym (ConsKeepsRest e≠x) \=> occ e) \=> ConsKeepsRest e≠x
 
 export
 PermutationOfNilIsNil : Container a c => {xs: c} -> IsPermutationOf [] xs -> xs = []
@@ -155,3 +155,37 @@ PermutationHasSameSize xs≎ys with (sizeAccessible @{ContainerSized} ys)
           size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ = (PermutationHasSameSize xs⧷⎨y⎬≎ys⧷⎨y⎬ | acc _ succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫)
         in
           size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫ \=> cong2 (+) (xs≎ys y) size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ \=> sym size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫
+
+export
+0 ConcNilLeftNeutral : {0 xs: c} -> Container a c => ([] ++ xs) ~@~ xs
+ConcNilLeftNeutral {xs} = Ipo (\x => ConcAddsCounts \=> cong (+ x .#. xs) ∀x‥x⋕【】≐0)
+
+export
+0 ConcNilRightNeutral : {0 xs: c} -> Container a c => (xs ++ []) ~@~ xs
+ConcNilRightNeutral = Ipo (\x => ConcAddsCounts \=> cong (x .#. xs +) ∀x‥x⋕【】≐0 \=> plusZeroRightNeutral _)
+
+0 x∷xs⧺ys≐x∷⎨xs⧺ys⎬: {x: a} -> {xs, ys: c} -> Container a c => ((x::xs) ++ ys) ~@~ (x :: (xs ++ ys))
+x∷xs⧺ys≐x∷⎨xs⧺ys⎬ = Ipo (\x' => ConcAddsCounts \=> case decEq @{DecEqElement {c}} x' x of
+      Yes Refl => cong (+ (x .#. ys)) (sym (ConsAddsOne {c})) \=> cong S (sym (ConcAddsCounts {c})) \=> ConsAddsOne
+      No x'≠x => cong (+ (x' .#. ys)) (sym (ConsKeepsRest x'≠x)) \=> sym (ConcAddsCounts {c}) \=> ConsKeepsRest x'≠x
+  )
+
+export
+0 ConcAddsSizes' : Container a c => {xs, ys: c} -> SizeAccessible @{ContainerSized} xs -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
+ConcAddsSizes' (Access acc) = case (IsNil xs) of
+  (Yes Refl) =>
+      PermutationHasSameSize ConcNilLeftNeutral \=> cong (+ size @{ContainerSized} ys) (sym ⋕⎨【】⎬≐0)
+  (No xs≠【】) => case (ConsBisurjective xs≠【】) of
+    (Bievidence x xs' x∷xs'≐xs) =>
+        let
+          ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size @{ContainerSized} xs = S (size @{ContainerSized} xs')) = rewrite sym x∷xs'≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+          ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬ = sym (cong (+ (size @{ContainerSized} ys)) ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬)
+
+          ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc _ (rewrite ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬ in reflexive)) {xs=xs'} {ys}
+          ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ = PermutationHasSameSize (x∷xs⧺ys≐x∷⎨xs⧺ys⎬ {xs=xs'} {ys} {x})
+        in
+          cong (\arg => size @{ContainerSized} (arg ++ ys)) (sym x∷xs'≐xs) \=> ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ \=> ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬
+
+export
+0 ConcAddsSizes : Container a c => {xs, ys: c} -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
+ConcAddsSizes = ConcAddsSizes' (sizeAccessible @{ContainerSized} xs) 
