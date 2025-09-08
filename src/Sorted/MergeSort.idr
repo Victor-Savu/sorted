@@ -75,8 +75,8 @@ mergeSort' xs acc with (split xs)
   mergeSort' _ (Access acc) | SplitOne x = Element [x] (Iso (Singleton x) (Ipo (\_ => Refl)))
   mergeSort' xs (Access acc) | SplitPair ls ls≠Nil rs rs≠Nil p =
     let
-      left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc \=> (plusCommutative _ _)))))
-      right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> SizedConc))))
+      left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes \=> (plusCommutative _ _)))))
+      right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes))))
       -- Element xs' iso = left ++ right
     in
       ?jagskdjha -- Element xs' (iso -@-> p)

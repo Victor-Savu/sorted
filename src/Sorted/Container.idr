@@ -4,7 +4,6 @@ import public Control.Relation
 import public Control.WellFounded
 import Data.Void
 import Data.Nat
-import Data.Vect
 import Data.Void
 import public Data.DPair
 import public Decidable.Equality
@@ -20,6 +19,8 @@ a \=> b = transitive a b
 %default total
 
 %hide Prelude.(::)
+%hide Prelude.List.(++)
+%hide Prelude.SnocList.(++)
 %hide Prelude.Stream.(::)
 %hide Prelude.Nil
 
@@ -138,11 +139,10 @@ export
 ThereCanOnlyBeOne : Container a c => (x: a) -> (know【x】≠【】: Not ([x]=[] {c})) -> let cbs = ConsBisurjective know【x】≠【】 in (cbs.first = x, cbs.second = [])
 ThereCanOnlyBeOne x know【x】≠【】 with (ConsBisurjective know【x】≠【】)
   ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence y ys y∷ys≐【x】) with (Cons {x=y} {x'=x} {xs=ys})
-    ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence _ ys y∷ys≐【x】) | (Left (Refl, ysz)) = (Refl, NilIsUnique noElementsInYs) where
-      noElementsInYs : (p : a) -> p .#. ys = 0
-      noElementsInYs p with (decEq @{DecEqElement {c}} x p)
-        noElementsInYs _ | (Yes Refl) = injective (ysz \=> cong (x .#.) y∷ys≐【x】 \=> sym (ConsAddsOne {x=x} {xs = ([] {c})})) \=> ∀x‥x⋕【】≐0
-        noElementsInYs p | (No x≠p) = ?NilIsUnique_arg_0_rhs_rhss_1
+    ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence x ys x∷ys≐【x】) | (Left (Refl, ysz)) = (
+        Refl,
+        ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (injective (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) x∷ys≐【x】 \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c} \=> (cong S (⋕⎨【】⎬≐0 {c}))))
+      )
     ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence y ys y∷ys≐【x】) | (Right (x≠y, x⋕ys≐x⋕❪y∷ys❫)) =
       let
         x⋕ys≐x⋕【x】 = x⋕ys≐x⋕❪y∷ys❫ \=> cong (x .#. ) y∷ys≐【x】
@@ -156,9 +156,6 @@ ThereCanOnlyBeOne x know【x】≠【】 with (ConsBisurjective know【x】≠�
         x⋕ys≐0 = cong (x .#.) ys≐【】 \=> ∀x‥x⋕【】≐0
         ‥1≐0 = sym x⋕ys≐1 \=> x⋕ys≐0
       in absurdity ‥1≐0
-
-
-
 
 export
 CongCons : Container a c => {x, y: a} -> {xs, ys: c} -> (x .#. xs = x .#. ys) -> x .#. (y::xs) = x .#. (y::ys)
@@ -275,6 +272,13 @@ EqualContainersHaveSameSize' (Access acc) xs≐ys = case (IsNil xs) of
 0 EqualContainersHaveSameSize: Container a c => {xs, ys: c} -> ContainerEq xs ys -> size @{ContainerSized} xs = size @{ContainerSized} ys
 EqualContainersHaveSameSize {xs} {ys} = EqualContainersHaveSameSize' {xs} {ys} (sizeAccessible @{ContainerSized} xs) where
 
+
+0 x∷xs⧺ys≐x∷⎨xs⧺ys⎬: {x: a} -> {xs, ys: c} -> Container a c => ContainerEq ((x::xs) ++ ys) (x :: (xs ++ ys))
+x∷xs⧺ys≐x∷⎨xs⧺ys⎬ x' = ConcAddsCounts \=> case decEq @{DecEqElement {c}} x' x of
+  Yes Refl => cong (+ (x .#. ys)) (sym (ConsAddsOne {c})) \=> cong S (sym (ConcAddsCounts {c})) \=> ConsAddsOne
+  No x'≠x => cong (+ (x' .#. ys)) (sym (ConsKeepsRest x'≠x)) \=> sym (ConcAddsCounts {c}) \=> ConsKeepsRest x'≠x
+
+export
 0 ConcAddsSizes' : Container a c => {xs, ys: c} -> SizeAccessible @{ContainerSized} xs -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
 ConcAddsSizes' (Access acc) = case (IsNil xs) of
   (Yes Refl) =>
@@ -282,9 +286,13 @@ ConcAddsSizes' (Access acc) = case (IsNil xs) of
   (No xs≠【】) => case (ConsBisurjective xs≠【】) of
     (Bievidence x xs' x∷xs'≐xs) =>
         let
-          o‥⋕⎨xs'⧺ys'⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc ?alp ?malp) {xs=xs'} {ys}
+          ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size @{ContainerSized} xs = S (size @{ContainerSized} xs')) = rewrite sym x∷xs'≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+          ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬ = sym (cong (+ (size @{ContainerSized} ys)) ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬)
+
+          ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc _ (rewrite ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬ in reflexive)) {xs=xs'} {ys}
+          ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ = EqualContainersHaveSameSize (x∷xs⧺ys≐x∷⎨xs⧺ys⎬ {xs=xs'} {ys} {x})
         in
-          ?help_1_rhs1_2
+          cong (\arg => size @{ContainerSized} (arg ++ ys)) (sym x∷xs'≐xs) \=> ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ \=> ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬
 
 export
 0 ConcAddsSizes : Container a c => {xs, ys: c} -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys
