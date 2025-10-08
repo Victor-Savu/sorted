@@ -7,11 +7,13 @@ import Data.List
 import Data.Nat
 import Decidable.Equality
 
+import Sorted.Sequence
+
 import public Sorted.Container
 
 %default total
 
-export
+public export
 DecEq a =>  Container a (List a) where
 
     x .#. [] = 0
@@ -19,7 +21,7 @@ DecEq a =>  Container a (List a) where
         x .#. (x :: xs) | (Yes Refl) = 1 + x .#. xs
         x .#. (x' :: xs) | (No _) = x .#. xs
 
-    [] = []
+    Nil = []
 
     IsNil [] = Yes Refl
     IsNil (x :: xs) = No (\x∷xs≐【】 => absurd x∷xs≐【】)
@@ -32,8 +34,8 @@ DecEq a =>  Container a (List a) where
       Cons | (Yes Refl) = Left (Refl, rewrite yes x' in  Refl)
       Cons | (No x'≠x) = Right (x'≠x, Refl)
 
-    ConsBisurjective {x∷xs = []} x∷xs≠【】= void $ x∷xs≠【】 Refl
-    ConsBisurjective {x∷xs = (x :: xs)} x∷xs≠【】= Bievidence x xs Refl
+    Match [] = void $ x∷xs≠【】 Refl
+    Match (x :: xs) = Bievidence x xs Refl
 
     xs ++ ys = xs ++ ys
 
@@ -52,12 +54,11 @@ DecEq a =>  Container a (List a) where
 
     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】{xs = []} _ = Refl
     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】{xs = (x :: xs)} the⋕⎨x∷xs⎬≐0 = absurdity the⋕⎨x∷xs⎬≐0
-    
+
+
+DecEq a => OutputSequence a (List a) where
+    OutSequence {x∷xs = []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequence {x∷xs = (x :: xs)} x∷xs≠【】 x∷xs≠【】' = (Refl, Refl)
 
 DecEq a => Sequence a (List a) where
-    Next {xss≠【】} [] = void $ xss≠【】 Refl
-    Next (x :: xs)  = Element (x, xs) ((rewrite yes x in Refl), \x' => ConsKeepsRest {x} {xs} {x'})
-
-    NextIndifferent [] p0 p1 = void $ p0 Refl
-    NextIndifferent (x :: xs) p0 p1 = Refl
-
+    InSequence = (Refl, Refl)

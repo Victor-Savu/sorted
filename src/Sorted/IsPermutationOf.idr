@@ -135,7 +135,7 @@ PermutationHasSameSize xs≎ys with (sizeAccessible @{ContainerSized} ys)
   PermutationHasSameSize xs≎ys | acc with (IsNil ys)
     PermutationHasSameSize xs≎ys | acc | (Yes Refl) with (PermutationOfNilIsNil (symmetric @{symmetricIsPermutationOf} xs≎ys))
       PermutationHasSameSize xs≎ys | acc | (Yes Refl) | Refl = Refl
-    PermutationHasSameSize (Ipo xs≎ys) | acc | (No ys≠【】) with (ConsBisurjective ys≠【】)
+    PermutationHasSameSize (Ipo xs≎ys) | acc | (No ys≠【】) with (Match ys)
       PermutationHasSameSize (Ipo xs≎ys) | Access acc | (No ys≠【】) | (Bievidence y ys' y∷ys'≐ys) =
         let
           Element xs⧷⎨y⎬ (y∉❪xs⧷⎨y⎬❫, e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫, size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫) = Remove y xs
@@ -175,7 +175,7 @@ export
 ConcAddsSizes' (Access acc) = case (IsNil xs) of
   (Yes Refl) =>
       PermutationHasSameSize ConcNilLeftNeutral \=> cong (+ size @{ContainerSized} ys) (sym ⋕⎨【】⎬≐0)
-  (No xs≠【】) => case (ConsBisurjective xs≠【】) of
+  (No xs≠【】) => case (Match xs) of
     (Bievidence x xs' x∷xs'≐xs) =>
         let
           ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size @{ContainerSized} xs = S (size @{ContainerSized} xs')) = rewrite sym x∷xs'≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬

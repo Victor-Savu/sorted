@@ -23,6 +23,8 @@ modules =
     -- Sorted.Container.Heap,
     Sorted.Container.List,
     Sorted.Container.Vect,
+    Sorted.Sequence,
+    -- Sorted.Sequence.Heap,
     -- Sorted.InsertionSort,
     Sorted.MergeSort,
     Sorted.IsPermutationOf,

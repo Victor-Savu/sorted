@@ -67,9 +67,9 @@ interface Container a c | c where
     ||| There exists an empty container
     Nil : c
     ||| It is decidable whether a container is empty
-    IsNil: (xs: c) -> Dec (xs = [])
+    IsNil: (xs: c) -> Dec (xs = Nil)
     ||| No element occurs in the empty container
-    ∀x‥x⋕【】≐0 : {x: a} -> x .#. [] = 0
+    ∀x‥x⋕【】≐0 : {x: a} -> x .#. Nil = 0
 
     ||| Cons: adding an element to a container
     (::) : a -> c -> c
@@ -82,7 +82,7 @@ interface Container a c | c where
     |||     when we append one element to the container, the other element will appear the same number of times in the result as it does in the original container
     Cons : {x, x': a} -> {xs: c} -> Either ((x'=x), (1 + x .#. xs) = x .#. (x :: xs)) (Not (x'=x), x' .#. xs =  x' .#. (x::xs))
     ||| If a container is not empty, then there exists at least one way of obtaining it through cons-ing an element to some container
-    ConsBisurjective: {x∷xs: c} -> Not (x∷xs=[]) -> Biexists (\x => \xs => x :: xs = x∷xs)
+    Match: (x∷xs: c) -> {auto 0 x∷xs≠【】: Not (x∷xs = [])} -> Biexists (\x => \xs => x :: xs = x∷xs) -- TODO: change  `Not (x∷xs=Nil) ->`  into  `Not (x∷xs=Nil) =>`
 
     ||| Concatenation
     (++) : (xs: c) -> (ys: c) -> c
@@ -92,11 +92,19 @@ interface Container a c | c where
     ||| Containers are sized
     ContainerSized : Sized c
     ||| For the implementation of size, the size of te empty container is 0
-    ⋕⎨【】⎬≐0: size @{ContainerSized} [] = 0
+    ⋕⎨【】⎬≐0: size @{ContainerSized} Nil = 0
     ||| Cons-ing an element to a container increases the size by exactly 1
     ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬: {x: a} -> {xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
     ||| Only the empty container has size 0
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {xs: c} -> (size @{ContainerSized} xs = 0) -> xs = []
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {xs: c} -> (size @{ContainerSized} xs = 0) -> xs = Nil
+
+export
+SizedNil: Container a c => (y : c) -> LTE (S (size @{ContainerSized} y)) (size @{ContainerSized} (Nil {c})) -> Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) y
+SizedNil y x = absurdity $ replace {p = \q => q} (cong (LTE (S (size @{ContainerSized} y))) (⋕⎨【】⎬≐0 {c})) x
+
+export
+AccessNil: Container a c => Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) (Nil {c})
+AccessNil = Access SizedNil
 
 ||| The first half of `Container.Cons` above
 export
@@ -114,36 +122,39 @@ ConsKeepsRest x'≠x with (Cons {x} {x'} {xs})
 
 ||| There is only one empty container
 export
-NilIsUnique : Container a c => {xs: c} -> ((x: a) -> (x .#. xs) {c} = 0) -> xs = []
+NilIsUnique : Container a c => {xs: c} -> ((x: a) -> (x .#. xs) {c} = 0) -> xs = Nil
 NilIsUnique x∉xs with (IsNil xs)
   NilIsUnique x∉xs | (Yes Refl) = Refl
-  NilIsUnique x∉xs | (No xs≠【】) with (ConsBisurjective xs≠【】)
+  NilIsUnique x∉xs | (No xs≠【】) with (Match xs)
     NilIsUnique x∉xs | (No xs≠【】) | (Bievidence x' xs' x'∷xs'≐xs) =
       rewrite sym x'∷xs'≐xs in
         void $ SIsNotZ (ConsAddsOne {c} {xs=xs'} \=> cong (x' .#.) x'∷xs'≐xs \=> x∉xs _)
 
 
 export
-[uninhabitedConsIsNil] {x: a} -> {xs: c} -> Container a c => Uninhabited (x::xs = ([] {c})) where
+[UninhabitedConsIsNil] Container a c => Uninhabited (x::xs = (Nil {c})) where
     uninhabited x∷xs≐【】 = absurdity $ ConsAddsOne \=> (cong (x .#.) x∷xs≐【】) \=>  (∀x‥x⋕【】≐0)
 
 export
 [DecEqElement] Container a c => DecEq a where
-  decEq x y with (Cons {x=y} {x'=x} {xs=([] {c})})
+  decEq x y with (Cons {x=y} {x'=x} {xs=(Nil {c})})
     decEq _ y | (Left (Refl, _)) = Yes Refl
     decEq x y | (Right (x≠y, _)) = No x≠y
 
 ||| There is only one way to write a container of one element as the cons of an element with a container:
-|||  the element cons'd with the nil container
+|||  the element cons'd with the Nil container
 export
-ThereCanOnlyBeOne : Container a c => (x: a) -> (know【x】≠【】: Not ([x]=[] {c})) -> let cbs = ConsBisurjective know【x】≠【】 in (cbs.first = x, cbs.second = [])
-ThereCanOnlyBeOne x know【x】≠【】 with (ConsBisurjective know【x】≠【】)
-  ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence y ys y∷ys≐【x】) with (Cons {x=y} {x'=x} {xs=ys})
-    ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence x ys x∷ys≐【x】) | (Left (Refl, ysz)) = (
+ThereCanOnlyBeOne : {auto 0 a, c: Type} -> Container a c => (x: a) -> Not ([x]=[] {c}) => 
+  let
+    Bievidence x' xs _ = Match {a} {c} [x]
+  in (x' = x, xs = [])
+ThereCanOnlyBeOne x with (Match {c} [x])
+  ThereCanOnlyBeOne x | (Bievidence y ys y∷ys≐【x】) with (Cons {x=y} {x'=x} {xs=ys})
+    ThereCanOnlyBeOne x | (Bievidence x ys x∷ys≐【x】) | (Left (Refl, ysz)) = (
         Refl,
         ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (injective (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) x∷ys≐【x】 \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c} \=> (cong S (⋕⎨【】⎬≐0 {c}))))
       )
-    ThereCanOnlyBeOne x know【x】≠【】 | (Bievidence y ys y∷ys≐【x】) | (Right (x≠y, x⋕ys≐x⋕❪y∷ys❫)) =
+    ThereCanOnlyBeOne x | (Bievidence y ys y∷ys≐【x】) | (Right (x≠y, x⋕ys≐x⋕❪y∷ys❫)) =
       let
         x⋕ys≐x⋕【x】 = x⋕ys≐x⋕❪y∷ys❫ \=> cong (x .#. ) y∷ys≐【x】
         x⋕ys≐1 = x⋕ys≐x⋕【x】 \=> sym ConsAddsOne \=> cong S ∀x‥x⋕【】≐0
@@ -174,8 +185,8 @@ Remove: Container a c => (x: a) -> (xs: c) -> Subset c (
   )
 Remove x xs with (sizeAccessible @{ContainerSized} xs)
   Remove x xs | acc with (IsNil xs)
-    Remove x _ | acc | (Yes Refl) = Element [] (∀x‥x⋕【】≐0, \_ => \_ => Refl, cong (+ size @{ContainerSized} ([] {c})) (sym ∀x‥x⋕【】≐0 ))
-    Remove x xs | acc | (No xs≠【】) with (ConsBisurjective xs≠【】)
+    Remove x _ | acc | (Yes Refl) = Element Nil (∀x‥x⋕【】≐0, \_ => \_ => Refl, cong (+ size @{ContainerSized} (Nil {c})) (sym ∀x‥x⋕【】≐0 ))
+    Remove x xs | acc | (No xs≠【】) with (Match xs)
       Remove x xs | Access acc | No _ | (Bievidence y ys y∷ys≐xs) =
         let
           Element ys⧷⎨x⎬ prf = (Remove x ys | acc _ $ eqLTE $ sym $ rewrite sym y∷ys≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=y})
@@ -195,41 +206,61 @@ Remove x xs with (sizeAccessible @{ContainerSized} xs)
             ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S otherer \=> (plusSuccRightSucc _ _) \=> cong2 (+) (ConsKeepsRest x≠y) (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬)
             ))
 
-export
-interface Container a c => Sequence a c | c where
-    ||| Given a container (xss) that is not empty,
-    ||| return an element from that container (x) and the container without the element (xs).
-    |||
-    ||| Post-conditions:
-    ||| - There is one fewer x in xs than there were in xss
-    ||| - Any other x' (that is not x) occurs just as many times in xs as in xss
-    Next : (xss: c) -> {auto 0 xss≠【】: Not (xss = [])} ->
-        (
-            Subset (a, c) (
-                    \(x, xs) => (
-                            x .#. xss = S (x .#. xs),
-                            (x': _) -> (Not (x'=x)) -> x' .#. xs = x' .#. xss
-                        )
-                )
-        )
-    NextIndifferent: (xss: c) -> (p0: Not (xss = [])) -> (p1: Not (xss = [])) -> (Next xss {xss≠【】=p0}).fst = (Next xss {xss≠【】=p1}).fst
+-- interface Unit a where
+--   Singleton: a
+--   Universal: forall b . (0 f: b -> a) -> (0 x: b) -> f x = Singleton
+
+-- ||| Any subset of a container type that preserves Nil is a container
+-- Container a c => (Unit (p (Nil {c}))) =>  Container a (Subset c p) where
+
+--     x .#. (Element xs _) = x .#. xs
+
+--     Nil = Element Nil Singleton
+
+--     IsNil (Element xs pxs) = case IsNil xs of
+--       Yes Refl => Yes (case (Universal {a=p (Nil {c})} {b=p (Nil {c})} id pxs) of
+--           Refl => Refl
+--         )
+        
+--       No xs≠【】 => No (\Refl => xs≠【】 Refl)
+
+--     ∀x‥x⋕【】≐0 = ∀x‥x⋕【】≐0 {c}
+
+--     x :: Element xs pxs = Element (x :: xs) ?h5
+
+--     Cons = ?h6
+
+--     ConsBisurjective = ?h7
+
+--     (++) = ?h8
+
+--     ConcAddsCounts = ?h9
+    
+--     ContainerSized = ?h10
+
+--     ⋕⎨【】⎬≐0 = ?h11
+
+--     ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = ?h12
+
+--     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 = ?h13
+
 
 -- snot : Not (x=x') -> Not (x'=x)
 -- snot f Refl = f Refl
 
 -- export
--- 0 ConsBiinjectiveWhenSingleton : Container a c => {x, y: a} -> {xs: c} -> DecEq a => (x :: xs = [y]) -> (x=y, xs=([] {c}))
+-- 0 ConsBiinjectiveWhenSingleton : Container a c => {x, y: a} -> {xs: c} -> DecEq a => (x :: xs = [y]) -> (x=y, xs=(Nil {c}))
 -- ConsBiinjectiveWhenSingleton x∷xs≐【y】 with (decEq x y)
 --   ConsBiinjectiveWhenSingleton x∷xs≐【x】 | Yes Refl = (Refl, (NilIsUnique x'_not_in_xs)) where
 --     x'_not_in_xs : forall x'. x' .#. xs = 0
 --     x'_not_in_xs with (decEq x x')
---       x'_not_in_xs | Yes Refl = injective (ConsAddsOne {x} {xs} \=> cong (x .#.) x∷xs≐【x】 \=> sym (ConsAddsOne {x} {xs=([] {c})})) \=> ∀x‥x⋕【】≐0 
---       x'_not_in_xs | No x≠x' = ConsKeepsRest {x} {xs} (snot x≠x') \=> cong (x' .#.) x∷xs≐【x】 \=> sym (ConsKeepsRest {x} {xs=([] {c})} (snot x≠x')) \=> ∀x‥x⋕【】≐0
+--       x'_not_in_xs | Yes Refl = injective (ConsAddsOne {x} {xs} \=> cong (x .#.) x∷xs≐【x】 \=> sym (ConsAddsOne {x} {xs=(Nil {c})})) \=> ∀x‥x⋕【】≐0 
+--       x'_not_in_xs | No x≠x' = ConsKeepsRest {x} {xs} (snot x≠x') \=> cong (x' .#.) x∷xs≐【x】 \=> sym (ConsKeepsRest {x} {xs=(Nil {c})} (snot x≠x')) \=> ∀x‥x⋕【】≐0
 --   ConsBiinjectiveWhenSingleton x∷xs≐【y】 | No x≠y = void $ SIsNotZ (ConsAddsOne \=> cong (x .#.) x∷xs≐【y】\=> sym (ConsKeepsRest x≠y) \=> ∀x‥x⋕【】≐0)
 
 
 -- export
--- 0 MatchBiinjectiveWhenSingleton : Container a c => Sequence a c => {y: a} -> DecEq a => forall prf【y】≠【】. (Iterate {c} [y] prf【y】≠【】).fst = (y, [])
+-- 0 MatchBiinjectiveWhenSingleton : Container a c => Sequence a c => {y: a} -> DecEq a => forall prf【y】≠【】. (Iterate {c} [y] prf【y】≠【】).fst = (y, Nil)
 -- MatchBiinjectiveWhenSingleton with (Iter {c} [y])
 --   MatchBiinjectiveWhenSingleton | (Left let【y】≐【】) = void $ SIsNotZ $ ConsAddsOne \=> cong (y .#.) let【y】≐【】 \=> ∀x‥x⋕【】≐0
 --   MatchBiinjectiveWhenSingleton | (Right (Element (x, xs) x∷xs≐【y】)) with (ConsBiinjectiveWhenSingleton x∷xs≐【y】)
@@ -261,7 +292,7 @@ no x≠x' with (decEq x x')
 --   findFirst x xxs | acc with (Iter xxs)
 --     findFirst x _ | acc | (Left Refl) = Left (∀x‥x⋕【】≐0)
 --     findFirst x _ | acc | (Right (Element (x', xs) Refl)) with (decEq x x')
---       findFirst x _ | acc | (Right (Element (_, xs) Refl)) | (Yes Refl) = Right (Element ([], xs) (∀x‥x⋕【】≐0, ConcNilLeftNeutral))
+--       findFirst x _ | acc | (Right (Element (_, xs) Refl)) | (Yes Refl) = Right (Element (Nil, xs) (∀x‥x⋕【】≐0, ConcNilLeftNeutral))
 --       findFirst x _ | Access acc | (Right (Element (x', xs) Refl)) | (No x≠x') =
 --         case (findFirst x xs | acc _ (replace {p = LTE (S (size @{ContainerSized} xs))} (sym $ SizedCons) reflexive)) of
 --           (Left x∉xs) => Left ((sym $ ConsKeepsRest x≠x') \=> x∉xs)

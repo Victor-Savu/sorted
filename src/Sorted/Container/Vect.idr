@@ -7,11 +7,14 @@ import Data.Vect
 import Data.Void
 import Decidable.Equality
 
+
+import Sorted.Sequence
+
 import public Sorted.Container
 
 %default total
 
-export
+public export
 data VectFamily : Type -> Type where
   MkVectFamily : Vect n a -> VectFamily a
 
@@ -27,7 +30,7 @@ concAddsCnt x (x' :: xs) ys with (decEq x x')
   concAddsCnt x (x :: xs) ys | (Yes Refl) = cong S $ concAddsCnt x xs ys
   concAddsCnt x (x' :: xs) ys | (No _) = concAddsCnt x xs ys
 
-export
+public export
 DecEq a => Container a (VectFamily a) where
     x .#. (MkVectFamily xs) = cnt x xs
     
@@ -44,8 +47,8 @@ DecEq a => Container a (VectFamily a) where
       Cons {xs = MkVectFamily xslist} | (Yes Refl) = Left (Refl, rewrite yes x' in Refl)
       Cons {xs = MkVectFamily xslist} | (No x'≠x) = Right (x'≠x, let Element _ p = no x'≠x in rewrite p in Refl)
 
-    ConsBisurjective {x∷xs = (MkVectFamily [])} x∷xs≠【】 = void $ x∷xs≠【】 Refl
-    ConsBisurjective {x∷xs = (MkVectFamily (x :: xs))} x∷xs≠【】 = Bievidence x (MkVectFamily xs) Refl
+    Match (MkVectFamily []) = void $ x∷xs≠【】 Refl
+    Match (MkVectFamily (x :: xs)) = Bievidence x (MkVectFamily xs) Refl
 
     MkVectFamily xs ++ MkVectFamily ys = MkVectFamily (xs ++ ys)
 
@@ -59,3 +62,11 @@ DecEq a => Container a (VectFamily a) where
 
     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily []} = Refl
     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily (x::xs)} = absurdity the⋕⎨x∷xs⎬≐0
+
+
+DecEq a => OutputSequence a (VectFamily a) where
+    OutSequence {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequence {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = (Refl, Refl)
+
+DecEq a => Sequence a (VectFamily a) where
+    InSequence {xs = MkVectFamily xs} = (Refl, Refl)
