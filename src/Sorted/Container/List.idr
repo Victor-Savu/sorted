@@ -57,8 +57,11 @@ DecEq a =>  Container a (List a) where
 
 
 DecEq a => OutputSequence a (List a) where
-    OutSequence {x∷xs = []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
-    OutSequence {x∷xs = (x :: xs)} x∷xs≠【】 x∷xs≠【】' = (Refl, Refl)
+    OutSequenceHead {x∷xs = []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequenceHead {x∷xs = (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
+    OutSequenceTail {x∷xs = []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequenceTail {x∷xs = (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
 
 DecEq a => Sequence a (List a) where
-    InSequence = (Refl, Refl)
+    InSequenceHead = Refl
+    InSequenceTail = Refl

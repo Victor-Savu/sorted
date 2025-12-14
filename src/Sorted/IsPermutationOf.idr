@@ -11,7 +11,7 @@ import public Sorted.Container
 %default total
 
 
-infixr 4 ~@~
+export infixr 4 ~@~
 
 %hide Prelude.(::)
 %hide Prelude.Stream.(::)

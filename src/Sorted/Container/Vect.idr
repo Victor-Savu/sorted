@@ -65,8 +65,11 @@ DecEq a => Container a (VectFamily a) where
 
 
 DecEq a => OutputSequence a (VectFamily a) where
-    OutSequence {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
-    OutSequence {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = (Refl, Refl)
+    OutSequenceHead {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequenceHead {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
+    OutSequenceTail {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
+    OutSequenceTail {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
 
 DecEq a => Sequence a (VectFamily a) where
-    InSequence {xs = MkVectFamily xs} = (Refl, Refl)
+    InSequenceHead {xs = MkVectFamily xs} = Refl
+    InSequenceTail {xs = MkVectFamily xs} = Refl

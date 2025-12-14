@@ -10,6 +10,7 @@ import public Sorted.IsPermutationOf
 import public Sorted.Relates
 import public Sorted.Sorted
 import public Sorted.IsSortingOf
+import Sorted.Sequence
 
 %default total
 
@@ -66,23 +67,23 @@ lteSum (LTESucc x) (LTESucc y) = LTESucc (eqLTE (sym $ plusSuccRightSucc _ _) \=
 0 atLeastOneInNonEmpty : Container a c => ( x∷xs = [] -> Void) -> LTE 1 (size @{ContainerSized {c}} x∷xs)
 atLeastOneInNonEmpty x∷xs≠【】 =
   let
-    ⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = (sym $ cong ((size @{ContainerSized})) (ConsBisurjective x∷xs≠【】).biexists) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+    ⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = (sym $ cong ((size @{ContainerSized {c}})) (Match x∷xs).biexists) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
   in rewrite ⋕⎨x∷xs⎬≐S⋕⎨xs⎬ in LTESucc LTEZero
 
-mergeSort' : DecEq a => LinearOrder a rel => Sequence a c => (xs: c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Subset (c) (IsSortingOf {rel} xs)
-mergeSort' xs acc with (split xs)
-  mergeSort' _ (Access acc) | SplitNil = Element [] []
-  mergeSort' _ (Access acc) | SplitOne x = Element [x] (Iso (Singleton x) (Ipo (\_ => Refl)))
-  mergeSort' xs (Access acc) | SplitPair ls ls≠Nil rs rs≠Nil p =
-    let
-      left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes \=> (plusCommutative _ _)))))
-      right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes))))
-      Element xs' iso = left ++ right
-    in
-      Element xs' (iso -@-> p)
+mergeSort' : DecEq a => LinearOrder a rel => OutputSequence a c => (xs: c) -> (0 acc: SizeAccessible @{ContainerSized} xs) -> Subset (c) (IsSortingOf {rel} xs)
+-- mergeSort' xs acc with (split xs)
+--   mergeSort' _ (Access acc) | SplitNil = Element [] []
+--   mergeSort' _ (Access acc) | SplitOne x = Element [x] (Iso ?asdafsd) -- (Ipo (\_ => Refl)) (Singleton x))
+--   mergeSort' xs (Access acc) | SplitPair ls ls≠Nil rs rs≠Nil p =
+--     let
+--       left = mergeSort' {rel} ls (acc _ (lteSum (atLeastOneInNonEmpty rs≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes \=> (plusCommutative _ _)))))
+--       right = mergeSort' {rel} rs (acc _ (lteSum (atLeastOneInNonEmpty ls≠Nil) (eqLTE Refl) \=> eqLTE (sym (PermutationHasSameSize p \=> ConcAddsSizes))))
+--       Element xs' iso = left ++ right
+--     in
+--       Element xs' (iso -@-> p)
 
-||| Sort a list in accordance to the linear order induced by rel.
-||| This is an implementation of the merge sort algorithm.
+-- ||| Sort a list in accordance to the linear order induced by rel.
+-- ||| This is an implementation of the merge sort algorithm.
 export
 mergeSort : DecEq a => LinearOrder a rel => Sequence a c => (xs: c) -> Subset (c) (IsSortingOf {rel} xs)
 mergeSort xs = mergeSort' xs (sizeAccessible @{ContainerSized} xs)
