@@ -92,12 +92,18 @@ infixr 4 -=@
 
 ||| An alternative notation for a sorted list
 export
-(-=@) : LinearOrder a rel => Container a c => Sequence a c => c -> Type
+(-=@) : LinearOrder a rel => OutputSequence a c => c -> Type
 (-=@) xs = Sorted {rel} xs
 
--- ||| The tail of a sorted list is also a sorted list.
--- export
--- 0 tail : LinearOrder a rel => DecEq a => Container a c => Sequence a c => {ys: c} -> {ysNotNil: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (snd (Next ys ysNotNil).fst))
+||| The tail of a sorted list is also a sorted list.
+export
+0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Match ys).second)
+tail [] = void $ ys≠【】 Refl
+tail (Singleton x) =
+  let
+    haa = ?asdakj
+  in replace {p = \q => Sorted {rel} {c} q} ?baga Nil
+tail (Several x y) = ?tail_rhs_2
 -- tail [] = absurdity @{UninhabitedConsIsNil} x∷xs≐ys
 -- tail (Singleton y) with (ConsBiinjectiveWhenSingleton x∷xs≐ys)
 --   tail (Singleton y) | (Refl, Refl) = []
@@ -107,9 +113,9 @@ export
 -- tail (Singleton y) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) []
 -- tail (relXY :@: sortedYYs) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) sortedYYs
 
--- ||| The head of a sorted list is relates to all of the elements in the tail of the list.
--- export
--- 0 head : LinearOrder a rel => Container a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
+||| The head of a sorted list is relates to all of the elements in the tail of the list.
+export
+0 head : LinearOrder a rel => OutputSequence a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
 -- head [] _ = absurdity @{UninhabitedConsIsNil} ysIsCons
 -- head (Singleton y) prf = void $ SIsNotZ $ (sym prf) \=> ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) \=> NilIsEmpty)
 -- head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective {c}} ysIsCons)

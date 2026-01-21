@@ -26,10 +26,9 @@ import Sorted.Sequence
 ||| sorted is both sorted and it is a permutation of scrambled.
 public export
 data IsSortingOf: LinearOrder a rel => OutputSequence a c => Rel c where
-  Iso: {auto 0 lo: LinearOrder a rel} ->
-       {auto 0 seq: OutputSequence a c} ->
-       {auto 0 acc: SizeAccessible @{ContainerSized} sorted} ->
-       {auto 0 std: Sorted {a} {c} {rel} sorted} ->
+  Iso: LinearOrder a rel => OutputSequence a c =>
+       SizeAccessible @{ContainerSized} sorted =>
+       Sorted {a} {c} {rel} sorted =>
        (0 prm: (scrambled ~@~ sorted) {c}) -> IsSortingOf {rel} scrambled sorted
 
 export
@@ -52,7 +51,7 @@ LinearOrder a rel => OutputSequence a c => Transitive c (IsSortingOf {rel}) wher
 
 export
 Nil : LinearOrder a rel => OutputSequence a c => IsSortingOf {rel} {c} (Container.Nil {c}) (Container.Nil {c})
-[] = Iso {acc=Access ?huda} {std=Sorted.Sorted.Nil} (Ipo (\e => Refl))
+[] = Iso @{_} @{_} @{Access ?huda} @{Sorted.Sorted.Nil} (Ipo (\e => Refl))
 
 -- cons : LinearOrder a rel => Sequence a c => (0 acc: (SizeAccessible @{ContainerSized} orig)) -> (x: a) -> (xs: Subset c (IsSortingOf {c} {rel} orig)) -> Subset c (IsSortingOf {c} {rel} (x::orig))
 -- cons acc x (Element f prf) with (Match f)
@@ -92,7 +91,7 @@ export
 [SizedPairContainers] Container a c => Sized (Pair c c) where
   size (x,y) = size @{ContainerSized} x + size @{ContainerSized} y
 
--- covering
+covering
 isoPlus : DecEq a => LinearOrder a rel => OutputSequence a c => (0 acc: SizeAccessible @{SizedPairContainers} (left, right)) -> Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
 isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight) = case IsNil sortedLeft of
   Yes Refl => Element sortedRight (
@@ -110,14 +109,14 @@ isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingO
       in
         Iso ((((reflexive @{reflexiveIsPermutationOf}) ++ isPermutationOfRight ) \=> ((ConcNilRightNeutral \=> isPermutationOfLeft) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
       )
-    No sortedRight≠【】 => ?tobecontinued
-      -- case (Match sortedLeft, Match sortedRight) of
-      --   ((Bievidence l ls l∷ls≐sortedLeft), (Bievidence r rs r∷rs≐sortedRight)) => case decEq @{DecEqElement {c}} l r of
-      --     Yes Refl => case isoPlus {a} {rel} (Access ?abula_0) (Element ls (Iso (reflexive @{reflexiveIsPermutationOf}))) (Element rs (Iso (reflexive @{reflexiveIsPermutationOf}))) of
-      --       Element lsrs srtd =>  Element (l :: r :: lsrs) ?hababa
-      --     No l≠r => case connex {rel} l≠r of
-      --       l≤r => ?huga_1
-      --       r≤l => ?huga_2
+    No sortedRight≠【】 => -- ?tobecontinued
+      case (Match sortedLeft, Match sortedRight) of
+        ((Bievidence l ls l∷ls≐sortedLeft), (Bievidence r rs r∷rs≐sortedRight)) => case decEq @{DecEqElement {c}} l r of
+          Yes Refl => case isoPlus {a} {rel} (Access ?abula_0) (Element ls (Iso @{_} @{_} @{?hada} @{?nada} (reflexive @{reflexiveIsPermutationOf}))) (Element rs (Iso @{_} @{_} @{?bada} @{?gada} (reflexive @{reflexiveIsPermutationOf}))) of
+            Element lsrs srtd =>  Element (l :: r :: lsrs) ?hababa
+          No l≠r => case connex {rel} l≠r of
+            l≤r => ?huga_1
+            r≤l => ?huga_2
 
 -- with (Match sortedLeft, Match sortedRight)
 --   isoPlus acc (_ # Iso _ isPermutationOfLeft) (_ # Iso _ isPermutationOfRight) | (Left Refl, Left Refl) = [] # Iso [] (((isPermutationOfLeft ++ isPermutationOfRight) \=> (rewrite ConcNilLeftNeutral {c} {xs=[]} in reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})
@@ -144,7 +143,7 @@ isoPlus acc (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingO
 --             Iso srtd ((shiftPermutation isPermutationOfRight \=> perm) @{transitiveIsPermutationOf})
             
 ||| Mergig the sorting of left and right produces the sorting of left ++ right
--- covering
+covering
 export
 (++) : DecEq a => LinearOrder a rel => OutputSequence a c => Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))
 (Element sortedLeft isSortingOfLeft) ++ (Element sortedRight isSortingOfRight) = isoPlus (sizeAccessible @{SizedPairContainers} (left, right)) (Element sortedLeft isSortingOfLeft) (Element sortedRight isSortingOfRight)
