@@ -81,8 +81,11 @@ interface Container a c | c where
     |||       AND
     |||     when we append one element to the container, the other element will appear the same number of times in the result as it does in the original container
     Cons : {x, x': a} -> {xs: c} -> Either ((x'=x), (1 + x .#. xs) = x .#. (x :: xs)) (Not (x'=x), x' .#. xs =  x' .#. (x::xs))
-    ||| If a container is not empty, then there exists at least one way of obtaining it through cons-ing an element to some container
-    Match: (x∷xs: c) -> {auto 0 x∷xs≠【】: Not (x∷xs = [])} -> Biexists (\x => \xs => x :: xs = x∷xs) -- TODO: change  `Not (x∷xs=Nil) ->`  into  `Not (x∷xs=Nil) =>`
+
+    Head: (x∷xs: c) -> (0 x∷xs≠【】: Not (x∷xs = [])) -> a
+    Tail: (x∷xs: c) -> (0 x∷xs≠【】: Not (x∷xs = [])) -> c
+    
+    HeadTail: (x∷xs: c) -> (0 x∷xs≠【】: Not (x∷xs = [])) -> (Head x∷xs x∷xs≠【】)::(Tail x∷xs x∷xs≠【】) = x∷xs
 
     ||| Concatenation
     (++) : (xs: c) -> (ys: c) -> c
@@ -123,13 +126,9 @@ ConsKeepsRest x'≠x with (Cons {x} {x'} {xs})
 ||| There is only one empty container
 export
 NilIsUnique : Container a c => {xs: c} -> ((x: a) -> (x .#. xs) {c} = 0) -> xs = Nil
-NilIsUnique x∉xs with (IsNil xs)
-  NilIsUnique x∉xs | (Yes Refl) = Refl
-  NilIsUnique x∉xs | (No xs≠【】) with (Match xs)
-    NilIsUnique x∉xs | (No xs≠【】) | (Bievidence x' xs' x'∷xs'≐xs) =
-      rewrite sym x'∷xs'≐xs in
-        void $ SIsNotZ (ConsAddsOne {c} {xs=xs'} \=> cong (x' .#.) x'∷xs'≐xs \=> x∉xs _)
-
+NilIsUnique x∉xs = case IsNil xs of
+  (Yes Refl) => Refl
+  (No xs≠【】) => void $ SIsNotZ (ConsAddsOne \=> cong ((Head xs xs≠【】) .#.) (HeadTail xs xs≠【】) \=> x∉xs (Head xs xs≠【】))
 
 export
 [UninhabitedConsIsNil] Container a c => Uninhabited (x::xs = (Nil {c})) where
@@ -141,32 +140,22 @@ export
     decEq _ y | (Left (Refl, _)) = Yes Refl
     decEq x y | (Right (x≠y, _)) = No x≠y
 
-||| There is only one way to write a container of one element as the cons of an element with a container:
-|||  the element cons'd with the Nil container
+
 export
-ThereCanOnlyBeOne : {auto 0 a, c: Type} -> Container a c => (x: a) -> Not ([x]=[] {c}) => 
-  let
-    Bievidence x' xs _ = Match {a} {c} [x]
-  in (x' = x, xs = [])
-ThereCanOnlyBeOne x with (Match {c} [x])
-  ThereCanOnlyBeOne x | (Bievidence y ys y∷ys≐【x】) with (Cons {x=y} {x'=x} {xs=ys})
-    ThereCanOnlyBeOne x | (Bievidence x ys x∷ys≐【x】) | (Left (Refl, ysz)) = (
-        Refl,
-        ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (injective (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) x∷ys≐【x】 \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c} \=> (cong S (⋕⎨【】⎬≐0 {c}))))
-      )
-    ThereCanOnlyBeOne x | (Bievidence y ys y∷ys≐【x】) | (Right (x≠y, x⋕ys≐x⋕❪y∷ys❫)) =
-      let
-        x⋕ys≐x⋕【x】 = x⋕ys≐x⋕❪y∷ys❫ \=> cong (x .#. ) y∷ys≐【x】
-        x⋕ys≐1 = x⋕ys≐x⋕【x】 \=> sym ConsAddsOne \=> cong S ∀x‥x⋕【】≐0
-        ⋕⎨y∷ys⎬≐⋕⎨【x】⎬ = cong (size @{ContainerSized}) y∷ys≐【x】
-        S⋕⎨ys⎬≐⋕⎨【x】⎬ = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> ⋕⎨y∷ys⎬≐⋕⎨【x】⎬ 
-        ⋕⎨【x】⎬≐1 = ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x} {c} \=> cong S ⋕⎨【】⎬≐0
-        S⋕⎨ys⎬≐1 = S⋕⎨ys⎬≐⋕⎨【x】⎬ \=> ⋕⎨【x】⎬≐1 
-        ⋕⎨ys⎬≐0 = injective S⋕⎨ys⎬≐1
-        ys≐【】 = ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 ⋕⎨ys⎬≐0
-        x⋕ys≐0 = cong (x .#.) ys≐【】 \=> ∀x‥x⋕【】≐0
-        ‥1≐0 = sym x⋕ys≐1 \=> x⋕ys≐0
-      in absurdity ‥1≐0
+TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> size @{ContainerSized} xs = S (size @{ContainerSized} $ Tail xs xs≠【】)
+TailIsShorter xs xs≠【】 = cong (size @{ContainerSized}) (sym $ HeadTail xs xs≠【】) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head _ xs≠【】} {xs= Tail _ xs≠【】}
+
+export
+ThereCanOnlyBeOneTail : Container a c => (x: a) -> (0 xNotNil:  Not ([x]=[] {c})) => Tail [x] xNotNil = ([] {c})
+ThereCanOnlyBeOneTail x =
+  ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (
+    injective (
+      sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=>
+        cong (size @{ContainerSized}) (HeadTail _ xNotNil) \=>
+          ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c} \=>
+            (cong S (⋕⎨【】⎬≐0 {c}))
+    )
+  )
 
 export
 CongCons : Container a c => {x, y: a} -> {xs, ys: c} -> (x .#. xs = x .#. ys) -> x .#. (y::xs) = x .#. (y::ys)
@@ -186,24 +175,31 @@ Remove: Container a c => (x: a) -> (xs: c) -> Subset c (
 Remove x xs with (sizeAccessible @{ContainerSized} xs)
   Remove x xs | acc with (IsNil xs)
     Remove x _ | acc | (Yes Refl) = Element Nil (∀x‥x⋕【】≐0, \_ => \_ => Refl, cong (+ size @{ContainerSized} (Nil {c})) (sym ∀x‥x⋕【】≐0 ))
-    Remove x xs | acc | (No xs≠【】) with (Match xs)
-      Remove x xs | Access acc | No _ | (Bievidence y ys y∷ys≐xs) =
+    Remove x xs | acc | (No xs≠【】) with (HeadTail xs xs≠【】)
+      Remove x xs | Access acc | No xs≠【】 | (headXs∷TailXs≐xs) =
         let
-          Element ys⧷⎨x⎬ prf = (Remove x ys | acc _ $ eqLTE $ sym $ rewrite sym y∷ys≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=y})
-          0 x∉ys⧷⎨x⎬ = fst prf
+          -- Element tailXs⧷⎨x⎬ prf = (Remove x (Tail _ xs≠【】) | acc _ $ eqLTE $ sym $ rewrite sym headXs∷TailXs≐xs in rewrite sym headXs∷TailXs≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head _ xs≠【】})
+          Element tailXs⧷⎨x⎬ prf = (Remove x (Tail _ xs≠【】) | acc _ $ eqLTE $ sym $ TailIsShorter _ xs≠【】)
+          0 x∉TailXs⧷⎨x⎬ = fst prf
           0 prf = snd prf
           0 prover = fst prf
           0 otherer = snd prf
-        in case decEq @{DecEqElement {a} {c}} x y of
-          Yes Refl => Element ys⧷⎨x⎬ (rewrite sym y∷ys≐xs in (
-            x∉ys⧷⎨x⎬,
-            \z => \z≠y => (sym (ConsKeepsRest z≠y) \=> prover z z≠y),
-            ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S otherer \=> cong (+ size @{ContainerSized} ys⧷⎨x⎬) ConsAddsOne
-            ))
-          No x≠y => Element (y::ys⧷⎨x⎬) (rewrite sym y∷ys≐xs in (
-            sym (ConsKeepsRest x≠y) \=> x∉ys⧷⎨x⎬,
-            \z => \z≠x => CongCons (prover z z≠x),
-            ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S otherer \=> (plusSuccRightSucc _ _) \=> cong2 (+) (ConsKeepsRest x≠y) (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬)
+        in case decEq @{DecEqElement {a} {c}} x (Head _ xs≠【】) of
+          (Yes Refl) => Element tailXs⧷⎨x⎬ (
+              x∉TailXs⧷⎨x⎬,
+              \z => \z≠HeadXs => rewrite sym headXs∷TailXs≐xs in ((sym (ConsKeepsRest z≠HeadXs)) \=> prover z z≠HeadXs),
+              sym (cong (size @{ContainerSized {c}}) headXs∷TailXs≐xs)
+                \=> (∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head xs xs≠【】} {xs=Tail xs xs≠【】})
+                \=> cong S otherer \=> (cong (+ size @{ContainerSized} tailXs⧷⎨x⎬) ConsAddsOne)
+                \=> (cong (\arg => (Head xs xs≠【】 .#. arg) + (size @{ContainerSized {c}} tailXs⧷⎨x⎬)) headXs∷TailXs≐xs)
+            )
+          (No x≠HeadXs) => Element ((Head xs xs≠【】)::tailXs⧷⎨x⎬) (rewrite sym headXs∷TailXs≐xs in (
+              sym (ConsKeepsRest x≠HeadXs) \=> x∉TailXs⧷⎨x⎬,
+              \y => \y≠x => CongCons (prover y y≠x),
+              ((∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head xs xs≠【】} {xs=Tail xs xs≠【】})
+                \=> cong S otherer
+                \=> (plusSuccRightSucc _ _)
+                \=> cong2 (+) (ConsKeepsRest x≠HeadXs) (sym $ ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head xs xs≠【】}))
             ))
 
 -- interface Unit a where

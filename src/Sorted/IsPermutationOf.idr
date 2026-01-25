@@ -135,26 +135,25 @@ PermutationHasSameSize xs≎ys with (sizeAccessible @{ContainerSized} ys)
   PermutationHasSameSize xs≎ys | acc with (IsNil ys)
     PermutationHasSameSize xs≎ys | acc | (Yes Refl) with (PermutationOfNilIsNil (symmetric @{symmetricIsPermutationOf} xs≎ys))
       PermutationHasSameSize xs≎ys | acc | (Yes Refl) | Refl = Refl
-    PermutationHasSameSize (Ipo xs≎ys) | acc | (No ys≠【】) with (Match ys)
-      PermutationHasSameSize (Ipo xs≎ys) | Access acc | (No ys≠【】) | (Bievidence y ys' y∷ys'≐ys) =
+    PermutationHasSameSize (Ipo xs≎ys) | Access acc | (No ys≠【】) =
         let
-          Element xs⧷⎨y⎬ (y∉❪xs⧷⎨y⎬❫, e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫, size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫) = Remove y xs
-          Element ys⧷⎨y⎬ (y∉❪ys⧷⎨y⎬❫, e→e≠y→e⋕ys⋕≐e❪ys⧷⎨y⎬❫, size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫) = Remove y ys
+          Element xs⧷⎨y⎬ (y∉❪xs⧷⎨y⎬❫, e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫, size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫) = Remove (Head ys ys≠【】) xs
+          Element ys⧷⎨y⎬ (y∉❪ys⧷⎨y⎬❫, e→e≠y→e⋕ys⋕≐e❪ys⧷⎨y⎬❫, size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫) = Remove (Head ys ys≠【】) ys
           xs⧷⎨y⎬≎ys⧷⎨y⎬ : xs⧷⎨y⎬ ~@~ ys⧷⎨y⎬ =
-            Ipo (\e => case decEq @{DecEqElement {c}} e y of
+            Ipo (\e => case decEq @{DecEqElement {c}} e (Head ys ys≠【】) of
                           (Yes Refl) => y∉❪xs⧷⎨y⎬❫ \=> sym y∉❪ys⧷⎨y⎬❫
                           (No e≠y) => sym (e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫ e e≠y) \=> xs≎ys e \=> e→e≠y→e⋕ys⋕≐e❪ys⧷⎨y⎬❫ e e≠y)
-          s0≤y⋕ys : LTE 1 (y .#. ys) =
-            rewrite sym (cong (y .#. ) y∷ys'≐ys) in
-            rewrite sym (ConsAddsOne {x=y} {xs=ys'}) in
+          s0≤y⋕ys : LTE 1 ((Head ys ys≠【】) .#. ys) =
+            rewrite sym (cong ((Head ys ys≠【】) .#. ) (HeadTail ys ys≠【】)) in
+            rewrite sym (ConsAddsOne {x=Head ys ys≠【】} {xs=Tail ys ys≠【】}) in
               LTESucc LTEZero
           succ❪size❪ys⧷⎨y⎬❫≤y⋕ys∔size❪ys⧷⎨y⎬❫ = lteAdd (size @{ContainerSized} ys⧷⎨y⎬) s0≤y⋕ys
           succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫ =
             rewrite cong (LTE (S (size @{ContainerSized} ys⧷⎨y⎬))) (size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫ ) in
               succ❪size❪ys⧷⎨y⎬❫≤y⋕ys∔size❪ys⧷⎨y⎬❫
-          size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ = (PermutationHasSameSize xs⧷⎨y⎬≎ys⧷⎨y⎬ | acc _ succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫)
+          size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ = (PermutationHasSameSize xs⧷⎨y⎬≎ys⧷⎨y⎬ | acc _ succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫) 
         in
-          size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫ \=> cong2 (+) (xs≎ys y) size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ \=> sym size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫
+          size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫ \=> cong2 (+) (xs≎ys (Head ys ys≠【】)) size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ \=> sym size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫
 
 export
 0 ConcNilLeftNeutral : {0 xs: c} -> Container a c => ([] ++ xs) ~@~ xs
@@ -175,16 +174,15 @@ export
 ConcAddsSizes' (Access acc) = case (IsNil xs) of
   (Yes Refl) =>
       PermutationHasSameSize ConcNilLeftNeutral \=> cong (+ size @{ContainerSized} ys) (sym ⋕⎨【】⎬≐0)
-  (No xs≠【】) => case (Match xs) of
-    (Bievidence x xs' x∷xs'≐xs) =>
-        let
-          ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size @{ContainerSized} xs = S (size @{ContainerSized} xs')) = rewrite sym x∷xs'≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
-          ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬ = sym (cong (+ (size @{ContainerSized} ys)) ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬)
+  (No xs≠【】) => 
+    let
+      ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size @{ContainerSized} xs = S (size @{ContainerSized} (Tail xs xs≠【】))) = cong (size @{ContainerSized {c}}) (sym $ HeadTail xs xs≠【】) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+      ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬ = sym (cong (+ (size @{ContainerSized} ys)) ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬)
 
-          ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc _ (rewrite ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬ in reflexive)) {xs=xs'} {ys}
-          ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ = PermutationHasSameSize (x∷xs⧺ys≐x∷⎨xs⧺ys⎬ {xs=xs'} {ys} {x})
-        in
-          cong (\arg => size @{ContainerSized} (arg ++ ys)) (sym x∷xs'≐xs) \=> ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ \=> ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬
+      ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc _ (rewrite ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬ in reflexive)) {xs=Tail xs xs≠【】} {ys}
+      ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ = PermutationHasSameSize (x∷xs⧺ys≐x∷⎨xs⧺ys⎬ {xs=Tail xs xs≠【】} {ys} {x=Head xs xs≠【】})
+    in
+      cong (\arg => size @{ContainerSized} (arg ++ ys)) (sym $ HeadTail xs xs≠【】) \=> ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ \=> ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬
 
 export
 0 ConcAddsSizes : Container a c => {xs, ys: c} -> size @{ContainerSized} (xs ++ ys) = size @{ContainerSized} xs + size @{ContainerSized} ys

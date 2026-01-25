@@ -39,9 +39,9 @@ namespace Sorted
       ||| If an element x relates to the head y of a sorted list y::ys, then x::y::ys is also sorted with respect to rel.
       Several: (seq: OutputSequence a c) =>
           {x∷y∷s: c} -> {auto 0 x∷y∷s≠【】: Not (x∷y∷s = [])} -> 
-            (Sorted @{lo} @{seq} {rel} ((Match x∷y∷s).second)) ->
-            {auto 0 y∷s≠【】: Not ((Match x∷y∷s).second = [])} ->
-              rel (Match x∷y∷s).first (Match ((Match x∷y∷s).second)).first ->
+            (Sorted @{lo} @{seq} {rel} (Tail x∷y∷s x∷y∷s≠【】)) ->
+            {auto 0 y∷s≠【】: Not (Tail x∷y∷s x∷y∷s≠【】 = [])} ->
+              rel (Head x∷y∷s x∷y∷s≠【】) (Head (Tail x∷y∷s x∷y∷s≠【】) y∷s≠【】) ->
               Sorted @{lo} @{seq} {rel} x∷y∷s
 
 ||| If x relates to all the elements of xs and xs is sorted with respect to the linear order induced by rel,
@@ -95,15 +95,17 @@ export
 (-=@) : LinearOrder a rel => OutputSequence a c => c -> Type
 (-=@) xs = Sorted {rel} xs
 
+-- let
+--                       (_, mumu) = ThereCanOnlyBeOne {c} {a} x ?huba
+--                     in replace {p = \q => Sorted {rel} {c} q} mumu Nil
+
 ||| The tail of a sorted list is also a sorted list.
 export
-0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Match ys).second)
+0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
 tail [] = void $ ys≠【】 Refl
-tail (Singleton x) =
-  let
-    haa = ?asdakj
-  in replace {p = \q => Sorted {rel} {c} q} ?baga Nil
+tail (Singleton x) = ?tail_rhs_1
 tail (Several x y) = ?tail_rhs_2
+
 -- tail [] = absurdity @{UninhabitedConsIsNil} x∷xs≐ys
 -- tail (Singleton y) with (ConsBiinjectiveWhenSingleton x∷xs≐ys)
 --   tail (Singleton y) | (Refl, Refl) = []
