@@ -102,7 +102,7 @@ export
 export
 0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
 tail [] = void $ ys≠【】 Refl
-tail (Singleton x) = ?tail_rhs_1
+tail (Singleton x) = replace {p = (Sorted {c}{rel})} (sym $ ThereCanOnlyBeOneTail x {xNotNil= ys≠【】} {c}) []
 tail (Several _ _ _ _ _) = ?tail_missing_case_1
 -- tail (Several x y) = ?tail_rhs_2
 
