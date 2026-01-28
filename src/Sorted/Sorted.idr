@@ -50,8 +50,8 @@ namespace Sorted
 (::) f [] = Singleton x
 (::) f (Singleton y) =
     let
-        l0: (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [y]) = InSequenceTail x [y]
-        l5: (Not (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [])) = (\arg => uninhabited @{UninhabitedConsIsNil {c}} ((sym l0) \=> arg))
+        0 l0: (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [y]) = InSequenceTail x [y]
+        0 l5: (Not (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [])) = (\arg => uninhabited @{UninhabitedConsIsNil {c}} ((sym l0) \=> arg))
     in Several
         [x, y]
         (uninhabited @{UninhabitedConsIsNil})
@@ -67,28 +67,24 @@ namespace Sorted
                 )
                 (f {guest=y} (sym (ConsAddsOne {x=y} {xs=[]} {c})))
         )
-(::) f (Several ys x∷y∷s≠【】 y y∷s≠【】 z) = ?op_rhs_2
-
--- (::) f (Several ys≠【】 g y) =
-    -- let
-    --   0 l0: (Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}) = ys) =
-    --       InSequenceTail x ys
-    --   0 l1: (Sorted {rel} (Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = Sorted {rel} ys) =
-    --       cong Sorted l0
-    --   0 l3: (Not ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = [])) =
-    --       \ctra => ys≠【】 (sym l0 \=> ctra)
-    --   0 l5: ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = x) =
-    --       InSequenceHead x ys
-    --   0 l7: (((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3)) = ((Head ys ys≠【】))) =
-    --       OSH ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ys (?haha) l3 ys≠【】 -- (InSequenceTail ?aa ?bb)
-    --   0 l6: ((rel ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3))) = rel x ((Head ys ys≠【】))) =
-    --       cong2 rel ?baba l7 -- (InSequenceHead ?cc ?dd)
-    --   l8: ((Head ys ys≠【】) .#. ys = S ((Head ys ys≠【】) .#. (Tail ys ys≠【】))) =
-    --       sym (ConsAddsOne \=> cong ((Head ys ys≠【】) .#.) (HeadTail ys ys≠【】))
-    --   l9: (rel x (Head ys ys≠【】)) = f l8
-    --   l4: rel ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3)) =
-    --       ford (sym l6) l9
-    -- in Several {x∷y∷s≠【】 = uninhabited @{UninhabitedConsIsNil}} (ford (sym (l1)) (Several g y)) l4
+(::) f (Several ys x∷y∷s≠【】 y y∷s≠【】 z)=
+    let
+        0 l0: (Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}) = ys) = InSequenceTail x ys
+        0 l5 = (\arg => x∷y∷s≠【】 ((sym l0) \=> arg))
+    in Several
+        (x::ys)
+        (uninhabited @{UninhabitedConsIsNil})
+        (ford (sym (cong Sorted l0)) (Several ys x∷y∷s≠【】 y y∷s≠【】 z))
+        l5
+        (
+            replace {p = \q => q}
+                (sym (
+                    cong2 rel
+                        (InSequenceHead x ys)
+                        (OSH (Tail (x::ys) (uninhabited @{UninhabitedConsIsNil})) ys l0 l5 x∷y∷s≠【】))
+                )
+                (f {guest=Head ys x∷y∷s≠【】} (sym (ConsAddsOne \=> cong (Head ys x∷y∷s≠【】 .#.) (HeadTail ys x∷y∷s≠【】))))
+        )
 
 export
 infixr 4 -=@
