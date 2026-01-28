@@ -38,9 +38,9 @@ namespace Sorted
       ||| Rel must induce a linear order over the type of elements in order to be useful for sorting.
       ||| If an element x relates to the head y of a sorted list y::ys, then x::y::ys is also sorted with respect to rel.
       Several: (seq: OutputSequence a c) =>
-          {x∷y∷s: c} -> {auto 0 x∷y∷s≠【】: Not (x∷y∷s = [])} -> 
+          (x∷y∷s: c) -> (0 x∷y∷s≠【】: Not (x∷y∷s = [])) -> 
             (Sorted @{lo} @{seq} {rel} (Tail x∷y∷s x∷y∷s≠【】)) ->
-            {auto 0 y∷s≠【】: Not (Tail x∷y∷s x∷y∷s≠【】 = [])} ->
+            (0 y∷s≠【】: Not (Tail x∷y∷s x∷y∷s≠【】 = [])) ->
               rel (Head x∷y∷s x∷y∷s≠【】) (Head (Tail x∷y∷s x∷y∷s≠【】) y∷s≠【】) ->
               Sorted @{lo} @{seq} {rel} x∷y∷s
 
@@ -48,44 +48,47 @@ namespace Sorted
 ||| then x::xs is also sorted with respect to the same linear order.
 (::) : DecEq a => LinearOrder a rel => Sequence a c => {x: a} -> RelatesToAll {a} {c} rel x ys -> Sorted {a} {c} {rel} ys -> Sorted {a} {c} {rel} ((x::ys) {c})
 (::) f [] = Singleton x
-(::) f (Singleton y) = ?singleton_prf
-    -- Solved but it takes a ton of time and memory to typecheck/build 
+(::) f (Singleton y) =
+    let
+        l0: (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [y]) = InSequenceTail x [y]
+        l5: (Not (Tail [x, y] (uninhabited @{UninhabitedConsIsNil {c}}) = [])) = (\arg => uninhabited @{UninhabitedConsIsNil {c}} ((sym l0) \=> arg))
+    in Several
+        [x, y]
+        (uninhabited @{UninhabitedConsIsNil})
+        (ford (sym (cong Sorted (InSequenceTail x [y]))) (Singleton {c} y))
+        l5
+        (
+            replace {p = \q => q}
+                (sym (
+                    cong2 rel
+                        (InSequenceHead {x=x} {xs=[y] {c}})
+                        (OSH (Tail [x, y] (uninhabited @{UninhabitedConsIsNil})) ([y] {c}) l0 l5 (uninhabited @{UninhabitedConsIsNil})
+                            \=> (InSequenceHead {c} {x=y} {xs=[]})))
+                )
+                (f {guest=y} (sym (ConsAddsOne {x=y} {xs=[]} {c})))
+        )
+(::) f (Several ys x∷y∷s≠【】 y y∷s≠【】 z) = ?op_rhs_2
+
+-- (::) f (Several ys≠【】 g y) =
     -- let
-    --     ist = InSequenceTail {x=x} {xs=[y] {c}}
-    --     0 ish = InSequenceHead {x=x} {xs=[y] {c}}
-    --     ish' = InSequenceHead {c} {x=y} {xs=[]}
-    --     mu = sym (ConsAddsOne {x=y} {xs=[]} {c})
-    --     ucn = uninhabited @{UninhabitedConsIsNil {c} {x=y} {xs=[]}}
-    --     muda = \ala => ucn (rewrite sym ist in ala)
-    --     hjfks = (f {guest=y} mu)
-    --     osha = OSH ((Match {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}} [x, y]) .second) ([y] {c}) ist muda (uninhabited @{UninhabitedConsIsNil})
-    --     shkh = cong2 rel ish (osha \=> ish')
-    -- in Several
-    --     {x∷y∷s≠【】 = uninhabited @{UninhabitedConsIsNil}}
-    --     (ford (sym (cong (Sorted {rel}) (InSequenceTail {x=x} {xs=[y] {c}}))) (Singleton {c} y))
-    --     {y∷s≠【】 = muda}
-    --     (replace {p = \q => q} (sym shkh) hjfks)
-(::) f (Several {x∷y∷s≠【】 = ys≠【】} g y) = ?several_prf
-    -- Solved but it takes a ton of time and memory to typecheck/build 
-    --   let
-    --     0 l0: ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}).second = ys) =
-    --         InSequenceTail
-    --     0 l1: (Sorted {rel} (Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}).second = Sorted {rel} ys) =
-    --         cong Sorted l0
-    --     0 l3: (Not ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}).second = [])) =
-    --         \ctra => ys≠【】 (sym l0 \=> ctra)
-    --     0 l5: ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}) .first = x) =
-    --         InSequenceHead
-    --     0 l7: (((Match ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}) .second) {x∷xs≠【】 = l3}) .first) = ((Match ys {x∷xs≠【】 = ys≠【】}) .first)) =
-    --         OSH ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}) .second) ys InSequenceTail l3 ys≠【】
-    --     0 l6: ((rel ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}).first) ((Match ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}) .second) {x∷xs≠【】 = l3}) .first)) = rel x ((Match ys {x∷xs≠【】 = ys≠【】}) .first)) =
-    --         cong2 rel (InSequenceHead) l7
-    --     l8: ((Match ys {x∷xs≠【】=ys≠【】}).first .#. ys = S ((Match ys {x∷xs≠【】=ys≠【】}).first .#. (Match ys {x∷xs≠【】=ys≠【】}).second)) =
-    --         sym (ConsAddsOne \=> cong ((Match ys {x∷xs≠【】=ys≠【】}).first .#.) (Match ys {x∷xs≠【】=ys≠【】}).biexists)
-    --     l9: (rel x (Match ys {x∷xs≠【】=ys≠【】}).first) = f l8
-    --     l4: rel ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}).first) ((Match ((Match (x :: ys) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil}}) .second) {x∷xs≠【】 = l3}) .first) =
-    --         ford (sym l6) l9
-    --   in Several {x∷y∷s≠【】 = uninhabited @{UninhabitedConsIsNil}} (ford (sym l1) (Several g y)) l4
+    --   0 l0: (Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}) = ys) =
+    --       InSequenceTail x ys
+    --   0 l1: (Sorted {rel} (Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = Sorted {rel} ys) =
+    --       cong Sorted l0
+    --   0 l3: (Not ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = [])) =
+    --       \ctra => ys≠【】 (sym l0 \=> ctra)
+    --   0 l5: ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil})) = x) =
+    --       InSequenceHead x ys
+    --   0 l7: (((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3)) = ((Head ys ys≠【】))) =
+    --       OSH ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ys (?haha) l3 ys≠【】 -- (InSequenceTail ?aa ?bb)
+    --   0 l6: ((rel ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3))) = rel x ((Head ys ys≠【】))) =
+    --       cong2 rel ?baba l7 -- (InSequenceHead ?cc ?dd)
+    --   l8: ((Head ys ys≠【】) .#. ys = S ((Head ys ys≠【】) .#. (Tail ys ys≠【】))) =
+    --       sym (ConsAddsOne \=> cong ((Head ys ys≠【】) .#.) (HeadTail ys ys≠【】))
+    --   l9: (rel x (Head ys ys≠【】)) = f l8
+    --   l4: rel ((Head (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) ((Head ((Tail (x :: ys) (uninhabited @{UninhabitedConsIsNil}))) l3)) =
+    --       ford (sym l6) l9
+    -- in Several {x∷y∷s≠【】 = uninhabited @{UninhabitedConsIsNil}} (ford (sym (l1)) (Several g y)) l4
 
 export
 infixr 4 -=@
@@ -104,7 +107,8 @@ export
 0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
 tail [] = void $ ys≠【】 Refl
 tail (Singleton x) = ?tail_rhs_1
-tail (Several x y) = ?tail_rhs_2
+tail (Several _ _ _ _ _) = ?tail_missing_case_1
+-- tail (Several x y) = ?tail_rhs_2
 
 -- tail [] = absurdity @{UninhabitedConsIsNil} x∷xs≐ys
 -- tail (Singleton y) with (ConsBiinjectiveWhenSingleton x∷xs≐ys)
