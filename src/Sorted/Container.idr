@@ -142,20 +142,31 @@ export
 
 
 export
-TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> size @{ContainerSized} xs = S (size @{ContainerSized} $ Tail xs xs≠【】)
-TailIsShorter xs xs≠【】 = cong (size @{ContainerSized}) (sym $ HeadTail xs xs≠【】) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head _ xs≠【】} {xs= Tail _ xs≠【】}
+TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> S (size @{ContainerSized} $ Tail xs xs≠【】) = size @{ContainerSized} xs
+TailIsShorter xs xs≠【】 = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) (HeadTail xs xs≠【】)
 
 export
-ThereCanOnlyBeOneTail : Container a c => (x: a) -> (0 xNotNil:  Not ([x]=[] {c})) => Tail [x] xNotNil = ([] {c})
-ThereCanOnlyBeOneTail x =
+ThereCanOnlyBeOneTail : Container a c => (x: a) -> (0 x≠【】:  Not ([x]=[] {c})) -> Tail [x] x≠【】 = ([] {c})
+ThereCanOnlyBeOneTail x x≠【】 =
   ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (
     injective (
       sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=>
-        cong (size @{ContainerSized}) (HeadTail _ xNotNil) \=>
-          ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c} \=>
-            (cong S (⋕⎨【】⎬≐0 {c}))
+        cong (size @{ContainerSized}) (HeadTail _ x≠【】) \=>
+          ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=>
+            (cong S ⋕⎨【】⎬≐0)
     )
   )
+
+
+export
+ThereCanOnlyBeOneHead : Container a c => (x: a) -> (0 x≠【】:  Not ([x]=[] {c})) -> Head [x] x≠【】 = x
+ThereCanOnlyBeOneHead x x≠【】 = case decEq @{DecEqElement {c}} (Head [x] x≠【】) x of
+  (Yes prf) => prf
+  (No contra) => void $ SIsNotZ (
+      ConsAddsOne
+      \=> (cong (Head [x] x≠【】 .#.) $ HeadTail _ x≠【】)
+      \=> sym (ConsKeepsRest {xs=([] {c})} contra) \=> ∀x‥x⋕【】≐0
+    )
 
 export
 CongCons : Container a c => {x, y: a} -> {xs, ys: c} -> (x .#. xs = x .#. ys) -> x .#. (y::xs) = x .#. (y::ys)
@@ -179,7 +190,7 @@ Remove x xs with (sizeAccessible @{ContainerSized} xs)
       Remove x xs | Access acc | No xs≠【】 | (headXs∷TailXs≐xs) =
         let
           -- Element tailXs⧷⎨x⎬ prf = (Remove x (Tail _ xs≠【】) | acc _ $ eqLTE $ sym $ rewrite sym headXs∷TailXs≐xs in rewrite sym headXs∷TailXs≐xs in ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head _ xs≠【】})
-          Element tailXs⧷⎨x⎬ prf = (Remove x (Tail _ xs≠【】) | acc _ $ eqLTE $ sym $ TailIsShorter _ xs≠【】)
+          Element tailXs⧷⎨x⎬ prf = (Remove x (Tail _ xs≠【】) | acc _ $ eqLTE $ TailIsShorter _ xs≠【】)
           0 x∉TailXs⧷⎨x⎬ = fst prf
           0 prf = snd prf
           0 prover = fst prf

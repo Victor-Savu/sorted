@@ -94,36 +94,40 @@ export
 (-=@) : LinearOrder a rel => OutputSequence a c => c -> Type
 (-=@) xs = Sorted {rel} xs
 
--- let
---                       (_, mumu) = ThereCanOnlyBeOne {c} {a} x ?huba
---                     in replace {p = \q => Sorted {rel} {c} q} mumu Nil
-
 ||| The tail of a sorted list is also a sorted list.
 export
-0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
+0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {0 ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
 tail [] = void $ ys≠【】 Refl
-tail (Singleton x) = replace {p = (Sorted {c}{rel})} (sym $ ThereCanOnlyBeOneTail x {xNotNil= ys≠【】} {c}) []
-tail (Several _ _ _ _ _) = ?tail_missing_case_1
--- tail (Several x y) = ?tail_rhs_2
-
--- tail [] = absurdity @{UninhabitedConsIsNil} x∷xs≐ys
--- tail (Singleton y) with (ConsBiinjectiveWhenSingleton x∷xs≐ys)
---   tail (Singleton y) | (Refl, Refl) = []
--- tail (y :@: z) = ?tail_rhs_2_rhs2
-
--- tail [] = absurdity @{UninhabitedConsIsNil} ysIsCons
--- tail (Singleton y) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) []
--- tail (relXY :@: sortedYYs) = replace {p = \q => Sorted {rel} {c} q} (sym $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) sortedYYs
+tail (Singleton x) = replace {p = Sorted} (sym $ ThereCanOnlyBeOneTail x ys≠【】) []
+tail (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_x_y) =
+    replace {p = Sorted} (OST _ _ Refl x∷y∷s≠【】 ys≠【】) sorted_y∷s
 
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
 export
-0 head : LinearOrder a rel => OutputSequence a c => DecEq a => {ysIsCons: x::xs = ys} -> Sorted {c} {rel} ys -> RelatesToAll {c} rel x xs
--- head [] _ = absurdity @{UninhabitedConsIsNil} ysIsCons
--- head (Singleton y) prf = void $ SIsNotZ $ (sym prf) \=> ((cong (guest .#.) $ snd $ biinjective @{ConsBiinjective {c}} ysIsCons) \=> NilIsEmpty)
--- head ((relXY :@: sortedYYs) {x=x'} {y} {ys}) prf with (biinjective @{ConsBiinjective {c}} ysIsCons)
---   head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) with (decEq guest y)
---     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (Yes Refl) = relXY
---     head ((relXY :@: sortedYYs) {x=x'} {y = y} {ys = ys}) prf | (Refl, Refl) | (No guestNEqY) = relXY \=> (head {x=y} {xs=ys} {ys=y::ys} {ysIsCons=Refl} sortedYYs (ConsKeepsRest guestNEqY \=> prf))
+0 head : LinearOrder a rel => OutputSequence a c => DecEq a => (ys: c) -> (ys≠【】: Not (ys = [])) -> Sorted {c} {rel} ys -> RelatesToAll {c} rel (Head ys ys≠【】) (Tail ys ys≠【】)
+head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
+  head _ ys≠【】 [] | acc = void $ ys≠【】 Refl
+  head _ ys≠【】 (Singleton x) | acc = \guestInTail => void $ SIsNotZ (sym guestInTail \=> (cong (guest .#.) $ ThereCanOnlyBeOneTail x ys≠【】) \=> ∀x‥x⋕【】≐0)
+  head ys ys≠【】 (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_h_ht) | Access acc = case decEq @{DecEqElement {c}} guest (Head ys ys≠【】) of
+    (Yes Refl) => \_ => reflexive
+    (No contra) =>
+        let
+            rec_step = (head (Tail ys x∷y∷s≠【】) y∷s≠【】 sorted_y∷s | acc _ (eqLTE $ TailIsShorter _ x∷y∷s≠【】))
+            ost = cong (guest .#.) $ sym $ OutSequenceTail ys ys≠【】 x∷y∷s≠【】
+        in \guestInTail => case decEq @{DecEqElement {c}} guest (Head (Tail ys x∷y∷s≠【】) y∷s≠【】) of
+            (Yes Refl) => replace {p = \q => rel q (Head (Tail ys x∷y∷s≠【】) y∷s≠【】)} (OutSequenceHead ys x∷y∷s≠【】 ys≠【】) rel_h_ht
+            (No guest_not_ht) =>
+                replace {p = \q => rel q guest}
+                    (OutSequenceHead ys x∷y∷s≠【】 ys≠【】)
+                    (
+                        rel_h_ht
+                        \=> rec_step (
+                            ConsKeepsRest guest_not_ht
+                            \=> (cong (guest .#.) $ HeadTail (Tail ys x∷y∷s≠【】) y∷s≠【】)
+                            \=> ost
+                            \=> guestInTail
+                        )
+                    )
 
 {0 x: t} -> Uninhabited t => Uninhabited (x = x) where
   uninhabited Refl = absurdity x
