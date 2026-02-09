@@ -8,7 +8,7 @@ import Data.Void
 import Decidable.Equality
 
 import Sorted.Sequence
-import Sorted.Relates
+import public Sorted.Relates
 
 %default total
 
@@ -46,6 +46,7 @@ namespace Sorted
 
 ||| If x relates to all the elements of xs and xs is sorted with respect to the linear order induced by rel,
 ||| then x::xs is also sorted with respect to the same linear order.
+export
 (::) : DecEq a => LinearOrder a rel => Sequence a c => {x: a} -> RelatesToAll {a} {c} rel x ys -> Sorted {a} {c} {rel} ys -> Sorted {a} {c} {rel} ((x::ys) {c})
 (::) f [] = Singleton x
 (::) f (Singleton y) =
@@ -96,7 +97,7 @@ export
 
 ||| The tail of a sorted list is also a sorted list.
 export
-0 tail : LinearOrder a rel => DecEq a => OutputSequence a c => {0 ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
+0 tail : LinearOrder a rel => OutputSequence a c => {0 ys: c} -> {0 ys≠【】: Not (ys = [])} -> (Sorted {rel} {c} ys) -> (Sorted {c} {rel} (Tail ys ys≠【】))
 tail [] = void $ ys≠【】 Refl
 tail (Singleton x) = replace {p = Sorted} (sym $ ThereCanOnlyBeOneTail x ys≠【】) []
 tail (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_x_y) =
@@ -104,7 +105,7 @@ tail (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_x_y) =
 
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
 export
-0 head : LinearOrder a rel => OutputSequence a c => DecEq a => (ys: c) -> (ys≠【】: Not (ys = [])) -> Sorted {c} {rel} ys -> RelatesToAll {c} rel (Head ys ys≠【】) (Tail ys ys≠【】)
+0 head : LinearOrder a rel => OutputSequence a c => (ys: c) -> (ys≠【】: Not (ys = [])) -> Sorted {c} {rel} ys -> RelatesToAll {c} rel (Head ys ys≠【】) (Tail ys ys≠【】)
 head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
   head _ ys≠【】 [] | acc = void $ ys≠【】 Refl
   head _ ys≠【】 (Singleton x) | acc = \guestInTail => void $ SIsNotZ (sym guestInTail \=> (cong (guest .#.) $ ThereCanOnlyBeOneTail x ys≠【】) \=> ∀x‥x⋕【】≐0)
@@ -131,3 +132,9 @@ head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
 
 {0 x: t} -> Uninhabited t => Uninhabited (x = x) where
   uninhabited Refl = absurdity x
+
+export
+0 RelatesToAllTheRest: LinearOrder a rel => OutputSequence a c => {x:a} -> {xs: c} -> (xs≠【】: Not (xs = [])) -> rel x (Head xs xs≠【】) -> Sorted {rel} xs -> RelatesToAll rel x xs
+RelatesToAllTheRest xs≠【】 x_rel_hxs srtd prf = case decEq @{DecEqElement {c}} guest (Head xs xs≠【】) of
+  (Yes Refl) => x_rel_hxs
+  (No guest_not_head) => x_rel_hxs \=> head xs xs≠【】 srtd (ConsKeepsRest {c} {xs = Tail xs xs≠【】} guest_not_head \=> cong (guest .#.) (HeadTail xs xs≠【】) \=> prf)

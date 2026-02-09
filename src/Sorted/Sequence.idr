@@ -39,3 +39,7 @@ public export
 interface OutputSequence a c => Sequence a c | c where
     InSequenceHead : (x: a) -> (xs: c) -> Head (x :: xs) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil {x} {xs}}} = x
     InSequenceTail : (x: a) -> (xs: c) -> Tail (x :: xs) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil {x} {xs}}} = xs
+
+export
+HeadOfTail: Sequence a c => (x': a) -> (x'': a) -> (xs: c) -> (x'x''∷xs≠【】: Not (x' :: x'':: xs = Nil {c})) -> (x''∷xs≠【】: Not (Tail (x' :: x'':: xs) x'x''∷xs≠【】 = Nil {c})) -> Head (Tail (x' :: x'' :: xs) x'x''∷xs≠【】) x''∷xs≠【】 = x''
+HeadOfTail x' x'' xs x'x''∷xs≠【】 x''∷xs≠【】 = OSH _ _ (OutSequenceTail _ x'x''∷xs≠【】 _ \=> InSequenceTail x' (x'' :: xs)) _ _ \=> InSequenceHead _ _

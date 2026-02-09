@@ -29,12 +29,6 @@ export
 ford : (0 _: a = b) -> a -> b
 ford Refl = id
 
-public export
-record Biexists {0 first_type : Type} {0 second_type: Type} this where
-  constructor Bievidence
-  first : first_type
-  second : second_type
-  0 biexists : this first second
 
 export
 eqLTE : {x, y: Nat} -> x = y -> LTE x y
@@ -101,6 +95,12 @@ interface Container a c | c where
     ||| Only the empty container has size 0
     ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {xs: c} -> (size @{ContainerSized} xs = 0) -> xs = Nil
 
+-- export
+-- interface Container a c => Container a c' => ContainerImage a c c' where
+--   image: c -> c'
+--   elementInImage: (xs: c) -> (x: a) -> x .#. xs = S n -> x .#. image xs = 1
+--   strangerNotInImage: (xs: c) -> (x: a) -> x .#. xs = 0 -> x .#. image xs = 0
+
 export
 SizedNil: Container a c => (y : c) -> LTE (S (size @{ContainerSized} y)) (size @{ContainerSized} (Nil {c})) -> Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) y
 SizedNil y x = absurdity $ replace {p = \q => q} (cong (LTE (S (size @{ContainerSized} y))) (⋕⎨【】⎬≐0 {c})) x
@@ -135,15 +135,22 @@ export
     uninhabited x∷xs≐【】 = absurdity $ ConsAddsOne \=> (cong (x .#.) x∷xs≐【】) \=>  (∀x‥x⋕【】≐0)
 
 export
+ConcNilNilNil: Container a c => [] ++ [] = ([] {c})
+ConcNilNilNil = NilIsUnique (\x => ConcAddsCounts \=> cong2 (+) ∀x‥x⋕【】≐0 ∀x‥x⋕【】≐0)
+
+export
+TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> S (size @{ContainerSized} $ Tail xs xs≠【】) = size @{ContainerSized} xs
+TailIsShorter xs xs≠【】 = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) (HeadTail xs xs≠【】)
+
+ConcNotNilLeft: Container a c => {xs: c} -> {ys: c} -> {xs≠【】: Not (xs = [])} -> Not (xs ++ ys = (Nil {c}))
+ConcNotNilLeft prf = SIsNotZ (cong (+ (Head xs xs≠【】 .#. ys)) (ConsAddsOne \=> (cong (Head xs xs≠【】 .#.) $ HeadTail xs xs≠【】)) \=> sym ConcAddsCounts \=> cong (Head xs xs≠【】 .#.) prf \=> ∀x‥x⋕【】≐0)
+
+export
 [DecEqElement] Container a c => DecEq a where
   decEq x y with (Cons {x=y} {x'=x} {xs=(Nil {c})})
     decEq _ y | (Left (Refl, _)) = Yes Refl
     decEq x y | (Right (x≠y, _)) = No x≠y
 
-
-export
-TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> S (size @{ContainerSized} $ Tail xs xs≠【】) = size @{ContainerSized} xs
-TailIsShorter xs xs≠【】 = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) (HeadTail xs xs≠【】)
 
 export
 ThereCanOnlyBeOneTail : Container a c => (x: a) -> (0 x≠【】:  Not ([x]=[] {c})) -> Tail [x] x≠【】 = ([] {c})
@@ -173,7 +180,6 @@ CongCons : Container a c => {x, y: a} -> {xs, ys: c} -> (x .#. xs = x .#. ys) ->
 CongCons x⋕xs≐x⋕ys with (decEq @{DecEqElement {a} {c}} x y)
   CongCons x⋕xs≐x⋕ys | (Yes Refl) = sym (ConsAddsOne) \=> cong S x⋕xs≐x⋕ys \=> ConsAddsOne
   CongCons x⋕xs≐x⋕ys | (No x≠y) = sym (ConsKeepsRest x≠y) \=> x⋕xs≐x⋕ys \=> (ConsKeepsRest x≠y)
-
 
 export
 Remove: Container a c => (x: a) -> (xs: c) -> Subset c (
@@ -273,12 +279,14 @@ Remove x xs with (sizeAccessible @{ContainerSized} xs)
 --   MatchBiinjectiveWhenSingleton | (Right (Element (x, xs) x∷xs≐【y】)) with (ConsBiinjectiveWhenSingleton x∷xs≐【y】)
 --     MatchBiinjectiveWhenSingleton | (Right (Element (x, _) Refl)) | (Refl, Refl) = Evidence Refl Refl
 
+||| Decidable.Equality.Core.decEqSelfIsYes
 export
 yes : DecEq a => (x: a) -> decEq x x = Yes Refl
 yes x with (decEq x x)
   yes x | (Yes Refl) = Refl
   yes x | (No xNEqX) = void $ xNEqX Refl
 
+||| Decidable.Equality.Core.decEqContraIsNo
 export
 no : DecEq a => {x, x': a} -> (x≠x': Not (x=x')) -> Subset (Not (x=x')) (\ctra => decEq x x' = No {prop=(x=x')} ctra)
 no x≠x' with (decEq x x')
