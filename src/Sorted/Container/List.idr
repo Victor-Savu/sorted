@@ -30,9 +30,8 @@ DecEq a =>  Container a (List a) where
 
   x :: y = x :: y
 
-  Cons with (decEq x' x)
-    Cons | (Yes Refl) = Left (Refl, rewrite yes x' in  Refl)
-    Cons | (No x'≠x) = Right (x'≠x, Refl)
+  ConsAddsOne = rewrite decEqSelfIsYes {x} in Refl
+  ConsKeepsRest x'≠x = rewrite (decEqContraIsNo x'≠x).snd in Refl
 
   Head [] x∷xs≠【】 = void $ x∷xs≠【】 Refl
   Head (x :: xs) x∷xs≠【】 = x
@@ -45,12 +44,17 @@ DecEq a =>  Container a (List a) where
 
   xs ++ ys = xs ++ ys
 
-  ConcAddsCounts {xs = []} {ys = []} = Refl
-  ConcAddsCounts {xs = []} {ys = (y :: xs)} = Refl
-  ConcAddsCounts {xs = (y :: xs)} {ys = []} = rewrite appendNilRightNeutral xs in (Refl \=> sym (plusZeroRightNeutral _))
-  ConcAddsCounts {xs = (x' :: xs)}  with (decEq x x')
-    ConcAddsCounts {xs = (_ :: xs)} | (Yes Refl) = cong S (ConcAddsCounts {c=List a})
-    ConcAddsCounts {xs = (x' :: xs)} | (No x≠x') = (ConcAddsCounts {c=List a})
+  ConcAddsCounts =
+    let
+      0 ans: (x .#. (Prelude.List.(++) xs ys) = plus (x .#. xs) (x .#. ys)) =
+        case xs of
+          [] => Refl
+          (x' :: xs) => case ys of
+            [] => rewrite appendNilRightNeutral xs in (Refl \=> sym (plusZeroRightNeutral _))
+            (y' :: ys) => case decEq x x' of
+              (Yes Refl) => rewrite decEqSelfIsYes {x} in cong S (ConcAddsCounts {c=List a})
+              (No x≠x') => rewrite (decEqContraIsNo x≠x').snd in (ConcAddsCounts {c=List a})
+    in rewrite ans in Refl
 
   ContainerSized = MkSized length
 
@@ -58,16 +62,30 @@ DecEq a =>  Container a (List a) where
 
   ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = Refl
 
-  ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】{xs = []} _ = Refl
-  ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】{xs = (x :: xs)} the⋕⎨x∷xs⎬≐0 = absurdity the⋕⎨x∷xs⎬≐0
-
+  ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 =
+    let
+      0 ans: (xs = []) =
+        case xs of
+          [] => Refl
+          (x :: ys) => absurdity the⋕⎨x∷xs⎬≐0
+    in rewrite ans in Refl
 
 DecEq a => OutputSequence a (List a) where
-  OutSequenceHead [] x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 Refl
-  OutSequenceHead (x :: xs) x∷xs≠【】 x∷xs≠【】' = Refl
+  OutSequenceHead x∷xs x∷xs≠【】 x∷xs≠【】'=
+    let
+      0 ans: (Head x∷xs x∷xs≠【】 = Head x∷xs x∷xs≠【】') = case x∷xs of
+        [] => void $ x∷xs≠【】 Refl
+        (x :: xs) => Refl
+    in
+      rewrite ans in Refl
 
-  OutSequenceTail [] x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 Refl
-  OutSequenceTail (x :: xs) x∷xs≠【】 x∷xs≠【】' = Refl
+  OutSequenceTail x∷xs x∷xs≠【】 x∷xs≠【】' =
+    let
+      0 ans: (Tail x∷xs x∷xs≠【】 = Tail x∷xs x∷xs≠【】') = case x∷xs of
+        [] => void $ x∷xs≠【】 Refl
+        (x :: xs) => Refl
+    in
+      rewrite ans in Refl
 
 DecEq a => Sequence a (List a) where
   InSequenceHead x xs = Refl

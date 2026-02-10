@@ -52,7 +52,7 @@ eqLTE Refl = reflexive
 |||    2. Given any other element of a (call it x'), that element will occur the same number of times in xs as it does in xxs (showing that no other
 |||       element of xs was duplicated or removed by (::))
 export
-interface Container a c | c where
+interface DecEq a => Container a c | c where
     constructor MkContainer
 
     ||| Counts the number of occurrences of an an element in the container
@@ -63,7 +63,7 @@ interface Container a c | c where
     ||| It is decidable whether a container is empty
     IsNil: (xs: c) -> Dec (xs = Nil)
     ||| No element occurs in the empty container
-    ∀x‥x⋕【】≐0 : {x: a} -> x .#. Nil = 0
+    ∀x‥x⋕【】≐0 : {0 x: a} -> x .#. Nil = 0
 
     ||| Cons: adding an element to a container
     (::) : a -> c -> c
@@ -74,7 +74,8 @@ interface Container a c | c where
     |||  2. The two elements are not equal
     |||       AND
     |||     when we append one element to the container, the other element will appear the same number of times in the result as it does in the original container
-    Cons : {x, x': a} -> {xs: c} -> Either ((x'=x), (1 + x .#. xs) = x .#. (x :: xs)) (Not (x'=x), x' .#. xs =  x' .#. (x::xs))
+    ConsAddsOne : {0 x: a} -> {0 xs: c} -> (1 + x .#. xs) = x .#. (x :: xs)
+    ConsKeepsRest : {0 x, x': a} -> {0 xs: c} ->  (0 x'≠x: Not (x'=x)) -> x' .#. xs =  x' .#. (x::xs)
 
     Head: (x∷xs: c) -> (0 x∷xs≠【】: Not (x∷xs = [])) -> a
     Tail: (x∷xs: c) -> (0 x∷xs≠【】: Not (x∷xs = [])) -> c
@@ -84,16 +85,16 @@ interface Container a c | c where
     ||| Concatenation
     (++) : (xs: c) -> (ys: c) -> c
     ||| An element occurs in the concatenation of two containers the total number of times it occurs in each container
-    ConcAddsCounts : {x: a} -> {xs, ys: c} -> x .#. (xs ++ ys) = x .#. xs + x .#. ys
+    ConcAddsCounts : {0 x: a} -> {0 xs, ys: c} -> x .#. (xs ++ ys) = x .#. xs + x .#. ys
     
     ||| Containers are sized
     ContainerSized : Sized c
     ||| For the implementation of size, the size of te empty container is 0
     ⋕⎨【】⎬≐0: size @{ContainerSized} Nil = 0
     ||| Cons-ing an element to a container increases the size by exactly 1
-    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬: {x: a} -> {xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
+    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬: {0 x: a} -> {0 xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
     ||| Only the empty container has size 0
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {xs: c} -> (size @{ContainerSized} xs = 0) -> xs = Nil
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {0 xs: c} -> (0 _: size @{ContainerSized} xs = 0) -> xs = Nil
 
 -- export
 -- interface Container a c => Container a c' => ContainerImage a c c' where
@@ -102,26 +103,12 @@ interface Container a c | c where
 --   strangerNotInImage: (xs: c) -> (x: a) -> x .#. xs = 0 -> x .#. image xs = 0
 
 export
-SizedNil: Container a c => (y : c) -> LTE (S (size @{ContainerSized} y)) (size @{ContainerSized} (Nil {c})) -> Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) y
+SizedNil: Container a c => (0 y : c) -> (0 _: LTE (S (size @{ContainerSized} y)) (size @{ContainerSized} (Nil {c}))) -> Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) y
 SizedNil y x = absurdity $ replace {p = \q => q} (cong (LTE (S (size @{ContainerSized} y))) (⋕⎨【】⎬≐0 {c})) x
 
 export
 AccessNil: Container a c => Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) (Nil {c})
-AccessNil = Access SizedNil
-
-||| The first half of `Container.Cons` above
-export
-ConsAddsOne : Container a c => {x: a} -> {xs: c} -> (1 + x .#. xs) = x .#. (x :: xs)
-ConsAddsOne with (Cons {x} {x'=x} {xs})
-  ConsAddsOne | (Left (_, cons_adds_one)) = cons_adds_one
-  ConsAddsOne | (Right (x≠x, _)) = void $ x≠x Refl
-
-||| The second half of `Container.Cons` above
-export
-ConsKeepsRest : Container a c => {x, x': a} -> {xs: c} -> Not (x'=x) ->  x' .#. xs =  x' .#. (x::xs)
-ConsKeepsRest x'≠x with (Cons {x} {x'} {xs})
-  ConsKeepsRest x'≠x | (Left (Refl, _)) = void $ x'≠x Refl
-  ConsKeepsRest x'≠x | (Right (_, cons_keeps_rest)) = cons_keeps_rest
+AccessNil = Access (\y, lte => SizedNil y lte)
 
 ||| There is only one empty container
 export
@@ -146,13 +133,6 @@ ConcNotNilLeft: Container a c => {xs: c} -> {ys: c} -> {xs≠【】: Not (xs = [
 ConcNotNilLeft prf = SIsNotZ (cong (+ (Head xs xs≠【】 .#. ys)) (ConsAddsOne \=> (cong (Head xs xs≠【】 .#.) $ HeadTail xs xs≠【】)) \=> sym ConcAddsCounts \=> cong (Head xs xs≠【】 .#.) prf \=> ∀x‥x⋕【】≐0)
 
 export
-[DecEqElement] Container a c => DecEq a where
-  decEq x y with (Cons {x=y} {x'=x} {xs=(Nil {c})})
-    decEq _ y | (Left (Refl, _)) = Yes Refl
-    decEq x y | (Right (x≠y, _)) = No x≠y
-
-
-export
 ThereCanOnlyBeOneTail : Container a c => (x: a) -> (0 x≠【】:  Not ([x]=[] {c})) -> Tail [x] x≠【】 = ([] {c})
 ThereCanOnlyBeOneTail x x≠【】 =
   ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (
@@ -167,7 +147,7 @@ ThereCanOnlyBeOneTail x x≠【】 =
 
 export
 ThereCanOnlyBeOneHead : Container a c => (x: a) -> (0 x≠【】:  Not ([x]=[] {c})) -> Head [x] x≠【】 = x
-ThereCanOnlyBeOneHead x x≠【】 = case decEq @{DecEqElement {c}} (Head [x] x≠【】) x of
+ThereCanOnlyBeOneHead x x≠【】 = case decEq (Head [x] x≠【】) x of
   (Yes prf) => prf
   (No contra) => void $ SIsNotZ (
       ConsAddsOne
@@ -177,7 +157,7 @@ ThereCanOnlyBeOneHead x x≠【】 = case decEq @{DecEqElement {c}} (Head [x] x�
 
 export
 CongCons : Container a c => {x, y: a} -> {xs, ys: c} -> (x .#. xs = x .#. ys) -> x .#. (y::xs) = x .#. (y::ys)
-CongCons x⋕xs≐x⋕ys with (decEq @{DecEqElement {a} {c}} x y)
+CongCons x⋕xs≐x⋕ys with (decEq x y)
   CongCons x⋕xs≐x⋕ys | (Yes Refl) = sym (ConsAddsOne) \=> cong S x⋕xs≐x⋕ys \=> ConsAddsOne
   CongCons x⋕xs≐x⋕ys | (No x≠y) = sym (ConsKeepsRest x≠y) \=> x⋕xs≐x⋕ys \=> (ConsKeepsRest x≠y)
 
@@ -201,7 +181,7 @@ Remove x xs with (sizeAccessible @{ContainerSized} xs)
           0 prf = snd prf
           0 prover = fst prf
           0 otherer = snd prf
-        in case decEq @{DecEqElement {a} {c}} x (Head _ xs≠【】) of
+        in case decEq x (Head _ xs≠【】) of
           (Yes Refl) => Element tailXs⧷⎨x⎬ (
               x∉TailXs⧷⎨x⎬,
               \z => \z≠HeadXs => rewrite sym headXs∷TailXs≐xs in ((sym (ConsKeepsRest z≠HeadXs)) \=> prover z z≠HeadXs),

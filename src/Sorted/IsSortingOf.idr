@@ -142,22 +142,23 @@ isoConc (Access acc) (Element sortedLeft isSortingOfLeft) (Element sortedRight i
         Iso isSortingOfLeft.sorted ((((reflexive @{reflexiveIsPermutationOf}) ++ isSortingOfRight.permutation ) \=> ((ConcNilRightNeutral \=> isSortingOfLeft.permutation) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
       )
     No sortedRight≠【】 =>
-        case order @{SCLeft {rel} @{DecEqElement {c}}} (Head sortedLeft sortedLeft≠【】) (Head sortedRight sortedRight≠【】) of
+        case order @{SCLeft {rel}} (Head sortedLeft sortedLeft≠【】) (Head sortedRight sortedRight≠【】) of
           Left l≤r => case isoConc {a} {rel} (acc _ (lteBothAddRight {c=size @{ContainerSized {c}} right} $ eqLTE (TailIsShorter sortedLeft sortedLeft≠【】 \=> (sym $ PermutationHasSameSize isSortingOfLeft.permutation)))) (Element (Tail sortedLeft sortedLeft≠【】) (Iso (tail isSortingOfLeft.sorted) (reflexive @{reflexiveIsPermutationOf}))) (Element sortedRight isSortingOfRight) of
              Element step srtd =>
               Element (Head sortedLeft sortedLeft≠【】 :: step) $
                 Iso
-                  (((((Relates.(++) {c} {rel} (head sortedLeft sortedLeft≠【】 isSortingOfLeft.sorted) $ (RelatesToAllTheRest sortedRight≠【】 l≤r isSortingOfRight.sorted -@-> (symmetric @{symmetricIsPermutationOf} isSortingOfRight.permutation)) {rel}) -@-> srtd.permutation) {rel} {x=Head sortedLeft sortedLeft≠【】}) :: srtd.sorted) @{DecEqElement {c}})
+                  (((((Relates.(++) {c} {rel} (head sortedLeft sortedLeft≠【】 isSortingOfLeft.sorted) $ (RelatesToAllTheRest sortedRight≠【】 l≤r isSortingOfRight.sorted -@-> (symmetric @{symmetricIsPermutationOf} isSortingOfRight.permutation)) {rel}) -@-> srtd.permutation) {rel} {x=Head sortedLeft sortedLeft≠【】}) :: srtd.sorted))
                   ((((((isSortingOfLeft.permutation \=> (reflexiveFromEq @{reflexiveIsPermutationOf} $ sym $ HeadTail sortedLeft sortedLeft≠【】)) @{transitiveIsPermutationOf}) ++ reflexive @{reflexiveIsPermutationOf}) \=> x∷xs⧺ys≐x∷⎨xs⧺ys⎬) @{transitiveIsPermutationOf} \=> _ :: srtd.permutation) @{transitiveIsPermutationOf})
           Right r≤l => case isoConc {a} {rel} (acc _ ((lteBothAddRight {a=S (size @{ContainerSized {c}} (Tail sortedRight sortedRight≠【】))} {b=size @{ContainerSized {c}} right} {c=size @{ContainerSized {c}} left} (eqLTE (TailIsShorter sortedRight sortedRight≠【】 \=> (sym $ PermutationHasSameSize isSortingOfRight.permutation))) \=> eqLTE (plusCommutative _ _)))) (Element (Tail sortedRight sortedRight≠【】) (Iso (tail isSortingOfRight.sorted) (reflexive @{reflexiveIsPermutationOf}))) (Element sortedLeft isSortingOfLeft) of
              Element step srtd =>
               Element (Head sortedRight sortedRight≠【】 :: step) $
                 Iso
-                  (((((Relates.(++) {c} {rel} (head sortedRight sortedRight≠【】 isSortingOfRight.sorted) $ (RelatesToAllTheRest sortedLeft≠【】 r≤l isSortingOfLeft.sorted -@-> (symmetric @{symmetricIsPermutationOf} isSortingOfLeft.permutation)) {rel}) -@-> srtd.permutation) {rel} {x=Head sortedRight sortedRight≠【】}) :: srtd.sorted) @{DecEqElement {c}})
+                  (((((Relates.(++) {c} {rel} (head sortedRight sortedRight≠【】 isSortingOfRight.sorted) $ (RelatesToAllTheRest sortedLeft≠【】 r≤l isSortingOfLeft.sorted -@-> (symmetric @{symmetricIsPermutationOf} isSortingOfLeft.permutation)) {rel}) -@-> srtd.permutation) {rel} {x=Head sortedRight sortedRight≠【】}) :: srtd.sorted))
                   ((AdditionOfPermutationsCommutes (reflexive @{reflexiveIsPermutationOf}) \=> ((((((isSortingOfRight.permutation \=> (reflexiveFromEq @{reflexiveIsPermutationOf} $ sym $ HeadTail sortedRight sortedRight≠【】)) @{transitiveIsPermutationOf}) ++ reflexive @{reflexiveIsPermutationOf}) \=> x∷xs⧺ys≐x∷⎨xs⧺ys⎬) @{transitiveIsPermutationOf} \=> _ :: srtd.permutation) @{transitiveIsPermutationOf})) @{transitiveIsPermutationOf})
 
 
 ||| Mergig the sorting of left and right produces the sorting of left ++ right
+||| This algorithm is known as "SortedMerge" and is an important component of MergeSort
 covering
 export
 0 (++) : DecEq a => LinearOrder a rel => Sequence a c => Subset c (IsSortingOf {rel} left) -> Subset c (IsSortingOf {rel}  right) -> Subset c (IsSortingOf {rel} (left ++ right))

@@ -109,13 +109,13 @@ export
 head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
   head _ ys≠【】 [] | acc = void $ ys≠【】 Refl
   head _ ys≠【】 (Singleton x) | acc = \guestInTail => void $ SIsNotZ (sym guestInTail \=> (cong (guest .#.) $ ThereCanOnlyBeOneTail x ys≠【】) \=> ∀x‥x⋕【】≐0)
-  head ys ys≠【】 (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_h_ht) | Access acc = case decEq @{DecEqElement {c}} guest (Head ys ys≠【】) of
+  head ys ys≠【】 (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_h_ht) | Access acc = case decEq guest (Head ys ys≠【】) of
     (Yes Refl) => \_ => reflexive
     (No contra) =>
         let
             rec_step = (head (Tail ys x∷y∷s≠【】) y∷s≠【】 sorted_y∷s | acc _ (eqLTE $ TailIsShorter _ x∷y∷s≠【】))
             ost = cong (guest .#.) $ sym $ OutSequenceTail ys ys≠【】 x∷y∷s≠【】
-        in \guestInTail => case decEq @{DecEqElement {c}} guest (Head (Tail ys x∷y∷s≠【】) y∷s≠【】) of
+        in \guestInTail => case decEq guest (Head (Tail ys x∷y∷s≠【】) y∷s≠【】) of
             (Yes Refl) => replace {p = \q => rel q (Head (Tail ys x∷y∷s≠【】) y∷s≠【】)} (OutSequenceHead ys x∷y∷s≠【】 ys≠【】) rel_h_ht
             (No guest_not_ht) =>
                 replace {p = \q => rel q guest}
@@ -135,6 +135,6 @@ head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
 
 export
 0 RelatesToAllTheRest: LinearOrder a rel => OutputSequence a c => {x:a} -> {xs: c} -> (xs≠【】: Not (xs = [])) -> rel x (Head xs xs≠【】) -> Sorted {rel} xs -> RelatesToAll rel x xs
-RelatesToAllTheRest xs≠【】 x_rel_hxs srtd prf = case decEq @{DecEqElement {c}} guest (Head xs xs≠【】) of
+RelatesToAllTheRest xs≠【】 x_rel_hxs srtd prf = case decEq guest (Head xs xs≠【】) of
   (Yes Refl) => x_rel_hxs
   (No guest_not_head) => x_rel_hxs \=> head xs xs≠【】 srtd (ConsKeepsRest {c} {xs = Tail xs xs≠【】} guest_not_head \=> cong (guest .#.) (HeadTail xs xs≠【】) \=> prf)

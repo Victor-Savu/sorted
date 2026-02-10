@@ -34,14 +34,14 @@ Nil prf with (sym prf \=> ∀x‥x⋕【】≐0)
 ||| If x relates to y and x also relates to all the elements of the list xs then x relates to all the elements of y::xs
 export
 (::) : {y: a} -> {rel: Rel a} -> {xs: c} -> rel x y -> Container a c => RelatesToAll rel x xs -> RelatesToAll rel x (y::xs)
-(::) relXY f prf with (decEq @{DecEqElement {c}} guest y)
+(::) relXY f prf with (decEq guest y)
   (::) relXGuest f prf | (Yes Refl) = relXGuest
   (::) relXY f prf | (No guestNEqY) = f $ ConsKeepsRest guestNEqY \=> prf
 
 ||| If e relates to all the elements in a non-empty list, it also relates to all the elements in the tail of the list
 export
 tail : {x: a} -> {xs: c} -> Container a c => RelatesToAll rel e (x::xs) -> RelatesToAll rel e xs
-tail f prf with (decEq @{DecEqElement {c}} guest x)
+tail f prf with (decEq guest x)
   tail f prf | (Yes Refl) = f $ sym $ ConsAddsOne
   tail f prf | (No guestNEqX) = f $ (sym $ ConsKeepsRest guestNEqX) \=> prf
 
