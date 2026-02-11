@@ -12,7 +12,7 @@ import Sorted.IsPermutationOf
 ||| The type of proofs that a value relates to all the elements of a list.
 public export
 RelatesToAll : {a: Type} -> Container a c => Rel a -> a -> c -> Type
-RelatesToAll relates socialButterfly party = {guest: a} -> {n: Nat} -> guest .#. party = (S n) -> relates socialButterfly guest
+RelatesToAll relates socialButterfly party = {guest: a} -> {n: Nat} -> (0 guest∈party: guest .#. party = (S n)) -> relates socialButterfly guest
 
 export infixr 4 -@->
 
@@ -57,7 +57,7 @@ oneMustBeNonZero {a = (S k)} {b = b} prf = (k ** Left Refl)
 
 ||| If e relates to all the elements in the list xs and to all the elements in the list ys then it relates to all the elements in the list xs++ys.
 export
-(++) : {xs, ys: c} -> Container a c => RelatesToAll rel e xs -> RelatesToAll rel e ys -> RelatesToAll rel e (xs++ys)
+0 (++) : {xs, ys: c} -> Container a c => RelatesToAll rel e xs -> RelatesToAll rel e ys -> RelatesToAll rel e (xs++ys)
 (++) e❤xs e❤ys guest∈xs⨢⨢ys with (oneMustBeNonZero (sym ConcAddsCounts \=> guest∈xs⨢⨢ys))
   (++) e❤xs e❤ys guest∈xs⨢⨢ys | (_ ** (Left guest∈xs)) = e❤xs guest∈xs
   (++) e❤xs e❤ys guest∈xs⨢⨢ys | (_ ** (Right guest∈ys)) = e❤ys guest∈ys
