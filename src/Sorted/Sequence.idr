@@ -37,8 +37,8 @@ OST _ _ Refl = OutSequenceTail _
 ||| would produce the same output.
 public export
 interface OutputSequence a c => Sequence a c | c where
-    InSequenceHead : (0 x: a) -> (0 xs: c) -> Head (x :: xs) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil {x} {xs}}} = x
-    InSequenceTail : (0 x: a) -> (0 xs: c) -> Tail (x :: xs) {x∷xs≠【】 = uninhabited @{UninhabitedConsIsNil {x} {xs}}} = xs
+    InSequenceHead : (0 x: a) -> (0 xs: c) -> Head (x :: xs) (uninhabited @{UninhabitedConsIsNil {x} {xs}}) = x
+    InSequenceTail : (0 x: a) -> (0 xs: c) -> Tail (x :: xs) (uninhabited @{UninhabitedConsIsNil {x} {xs}}) = xs
 
 export
 HeadOfTail: Sequence a c => (0 x': a) -> (0 x'': a) -> (0 xs: c) -> (0 x'x''∷xs≠【】: Not (x' :: x'':: xs = Nil {c})) -> (0 x''∷xs≠【】: Not (Tail (x' :: x'':: xs) x'x''∷xs≠【】 = Nil {c})) -> Head (Tail (x' :: x'' :: xs) x'x''∷xs≠【】) x''∷xs≠【】 = x''

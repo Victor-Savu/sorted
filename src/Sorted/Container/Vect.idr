@@ -18,6 +18,10 @@ public export
 data VectFamily : Type -> Type where
   MkVectFamily : Vect n a -> VectFamily a
 
+export
+Sized (VectFamily a) where
+  size (MkVectFamily xs) = length xs
+
 cnt : DecEq a => (x: a) -> (xs: Vect n a) -> Nat
 cnt x [] = 0
 cnt x (x' :: xs) with (decEq x x')
@@ -32,44 +36,94 @@ concAddsCnt x (x' :: xs) ys with (decEq x x')
 
 public export
 DecEq a => Container a (VectFamily a) where
-    x .#. (MkVectFamily xs) = cnt x xs
-    
-    [] = MkVectFamily []
+  x .#. (MkVectFamily xs) = cnt x xs
+  
+  [] = MkVectFamily []
 
-    IsNil (MkVectFamily []) = Yes Refl
-    IsNil (MkVectFamily (x :: xs)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
+  IsNil (MkVectFamily []) = Yes Refl
+  IsNil (MkVectFamily (x :: xs)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
 
-    ∀x‥x⋕【】≐0 = Refl
+  ∀x‥x⋕【】≐0 = Refl
 
-    x :: MkVectFamily ys = MkVectFamily (x :: ys)
+  x :: MkVectFamily ys = MkVectFamily (x :: ys)
 
-    Cons with (decEq x' x)
-      Cons {xs = MkVectFamily xslist} | (Yes Refl) = Left (Refl, rewrite yes x' in Refl)
-      Cons {xs = MkVectFamily xslist} | (No x'≠x) = Right (x'≠x, let Element _ p = no x'≠x in rewrite p in Refl)
+  ConsAddsOne =
+    let
+      0 l0: ((1 + x .#. xs) = x .#. (x :: xs)) = case xs of
+        (MkVectFamily []) => rewrite decEqSelfIsYes {x} in Refl
+        (MkVectFamily (y :: ys)) =>  rewrite decEqSelfIsYes {x} in Refl
+    in rewrite l0 in Refl
 
-    Match (MkVectFamily []) = void $ x∷xs≠【】 Refl
-    Match (MkVectFamily (x :: xs)) = Bievidence x (MkVectFamily xs) Refl
+  ConsKeepsRest x'≠x =
+    let
+      0 l0: (x' .#. xs =  x' .#. (x::xs)) = case xs of
+        (MkVectFamily []) => rewrite (decEqContraIsNo x'≠x).snd in Refl
+        (MkVectFamily (y :: ys)) => rewrite (decEqContraIsNo x'≠x).snd in Refl
+    in rewrite l0 in Refl
 
-    MkVectFamily xs ++ MkVectFamily ys = MkVectFamily (xs ++ ys)
+  -- Match (MkVectFamily []) = void $ x∷xs≠【】 Refl
+  -- Match (MkVectFamily (x :: xs)) = Bievidence x (MkVectFamily xs) Refl
 
-    ConcAddsCounts {xs = MkVectFamily xs} {ys = MkVectFamily ys} = concAddsCnt x xs ys
+  Head (MkVectFamily []) x∷xs≠【】 = void $ x∷xs≠【】 Refl
+  Head (MkVectFamily (x :: _)) _ = x
 
-    ContainerSized = MkSized (\(MkVectFamily xs) => length xs)
+  Tail (MkVectFamily []) x∷xs≠【】 = void $ x∷xs≠【】 Refl
+  Tail (MkVectFamily (_ :: xs)) _ = MkVectFamily xs
 
-    ⋕⎨【】⎬≐0 = Refl
+  HeadTail x∷xs x∷xs≠【】 =
+    let
+      0 l0: (Head x∷xs x∷xs≠【】 :: Tail x∷xs x∷xs≠【】 = x∷xs) =
+        case x∷xs of
+          (MkVectFamily []) => void $ x∷xs≠【】 Refl
+          (MkVectFamily (x :: xs)) => Refl
+    in rewrite l0 in Refl
 
-    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {xs = MkVectFamily xs} = Refl
+  MkVectFamily xs ++ MkVectFamily ys = MkVectFamily (xs ++ ys)
 
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily []} = Refl
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 {xs = MkVectFamily (x::xs)} = absurdity the⋕⎨x∷xs⎬≐0
+  ConcAddsCounts {xs = MkVectFamily xs} {ys = MkVectFamily ys} = rewrite concAddsCnt x xs ys in Refl
+
+  ⋕⎨【】⎬≐0 = Refl
+
+  ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {xs = MkVectFamily xs} = Refl
+
+  ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 the⋕⎨x∷xs⎬≐0 =
+    let 
+      0 prf: (xs = []) = case xs of
+        MkVectFamily [] => Refl
+        MkVectFamily (x::xs) => absurdity the⋕⎨x∷xs⎬≐0
+    in rewrite prf in Refl
 
 
 DecEq a => OutputSequence a (VectFamily a) where
-    OutSequenceHead {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
-    OutSequenceHead {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
-    OutSequenceTail {x∷xs = MkVectFamily []} x∷xs≠【】 x∷xs≠【】' = void $ x∷xs≠【】 $ NilIsUnique (\x => Refl)
-    OutSequenceTail {x∷xs = MkVectFamily (x :: xs)} x∷xs≠【】 x∷xs≠【】' = Refl
+  OutSequenceHead x∷xs x∷xs≠【】 x∷xs≠【】'=
+    let
+      0 l0: (Head x∷xs x∷xs≠【】 = Head x∷xs x∷xs≠【】') =
+        case x∷xs of
+          (MkVectFamily []) => void $ x∷xs≠【】 Refl
+          (MkVectFamily (x :: xs)) => Refl
+    in rewrite l0 in Refl
+  OutSequenceTail x∷xs x∷xs≠【】 x∷xs≠【】' =
+    let
+      0 l0: (Tail x∷xs x∷xs≠【】 = Tail x∷xs x∷xs≠【】') =
+        case x∷xs of
+          (MkVectFamily []) => void $ x∷xs≠【】 Refl
+          (MkVectFamily (x :: xs)) => Refl
+    in rewrite l0 in Refl
 
 DecEq a => Sequence a (VectFamily a) where
-    InSequenceHead {xs = MkVectFamily xs} = Refl
-    InSequenceTail {xs = MkVectFamily xs} = Refl
+  InSequenceHead x xs =
+    let
+      0 l0: (Head (x::xs) (uninhabited @{UninhabitedConsIsNil {c=VectFamily a} {x} {xs}}) = x) =
+        case xs of
+          (MkVectFamily []) => Refl
+          (MkVectFamily (x' :: xs')) => Refl
+    in rewrite l0 in Refl
+
+  InSequenceTail x xs =
+    let
+      0 l0: (Tail (x::xs) (uninhabited @{UninhabitedConsIsNil {c=VectFamily a} {x} {xs}}) = xs) =
+        case xs of
+          (MkVectFamily []) => Refl
+          (MkVectFamily (x' :: xs')) => Refl
+    in rewrite l0 in Refl
+
