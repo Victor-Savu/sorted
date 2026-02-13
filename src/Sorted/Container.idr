@@ -34,6 +34,15 @@ export
 eqLTE : {x, y: Nat} -> x = y -> LTE x y
 eqLTE Refl = reflexive
 
+export
+reflexiveFromEq: Reflexive ty rel => {a, b: ty} -> a = b -> rel a b
+reflexiveFromEq Refl = reflexive
+
+export
+lteAddLeft : (m, n, p: Nat) -> (m + n) `LTE` p -> m `LTE` p
+lteAddLeft m 0 p prf = eqLTE (sym $ plusZeroRightNeutral _) \=> prf
+lteAddLeft m (S k) p prf = lteAddLeft m k p (lteSuccLeft (eqLTE (plusSuccRightSucc _ _) \=> prf))
+
 ||| A container is a type that
 ||| a. has an element representing the empty container
 ||| b. has a way to add an element to an existing container such that the resulting container contains exactly one more instance of that new element
@@ -52,7 +61,7 @@ eqLTE Refl = reflexive
 |||    2. Given any other element of a (call it x'), that element will occur the same number of times in xs as it does in xxs (showing that no other
 |||       element of xs was duplicated or removed by (::))
 export
-interface DecEq a => Container a c | c where
+interface DecEq a => Sized c => Container a c | c where
     constructor MkContainer
 
     ||| Counts the number of occurrences of an an element in the container
@@ -87,14 +96,12 @@ interface DecEq a => Container a c | c where
     ||| An element occurs in the concatenation of two containers the total number of times it occurs in each container
     ConcAddsCounts : {0 x: a} -> {0 xs, ys: c} -> x .#. (xs ++ ys) = x .#. xs + x .#. ys
     
-    ||| Containers are sized
-    ContainerSized : Sized c
     ||| For the implementation of size, the size of te empty container is 0
-    ⋕⎨【】⎬≐0: size @{ContainerSized} Nil = 0
+    ⋕⎨【】⎬≐0: size Nil = 0
     ||| Cons-ing an element to a container increases the size by exactly 1
-    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬: {0 x: a} -> {0 xs: c} -> size @{ContainerSized} (x::xs) = S (size @{ContainerSized} xs)
+    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬: {0 x: a} -> {0 xs: c} -> size (x::xs) = S (size xs)
     ||| Only the empty container has size 0
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {0 xs: c} -> (0 _: size @{ContainerSized} xs = 0) -> xs = Nil
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】: {0 xs: c} -> (0 _: size xs = 0) -> xs = Nil
 
 -- export
 -- interface Container a c => Container a c' => ContainerImage a c c' where
@@ -103,11 +110,11 @@ interface DecEq a => Container a c | c where
 --   strangerNotInImage: (xs: c) -> (x: a) -> x .#. xs = 0 -> x .#. image xs = 0
 
 export
-SizedNil: Container a c => (0 y : c) -> (0 _: LTE (S (size @{ContainerSized} y)) (size @{ContainerSized} (Nil {c}))) -> Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) y
-SizedNil y x = absurdity $ replace {p = \q => q} (cong (LTE (S (size @{ContainerSized} y))) (⋕⎨【】⎬≐0 {c})) x
+SizedNil: Container a c => (0 y : c) -> (0 _: LTE (S (size y)) (size (Nil {c}))) -> Accessible (\x, y => LTE (S (size x)) (size y)) y
+SizedNil y x = absurdity $ replace {p = \q => q} (cong (LTE (S (size y))) (⋕⎨【】⎬≐0 {c})) x
 
 export
-AccessNil: Container a c => Accessible (\x, y => LTE (S (size @{ContainerSized} x)) (size @{ContainerSized} y)) (Nil {c})
+AccessNil: Container a c => Accessible (\x, y => LTE (S (size x)) (size y)) (Nil {c})
 AccessNil = Access (\y, lte => SizedNil y lte)
 
 ||| There is only one empty container
@@ -118,6 +125,10 @@ NilIsUnique x∉xs = case IsNil xs of
   (No xs≠【】) => void $ SIsNotZ (ConsAddsOne \=> cong ((Head xs xs≠【】) .#.) (HeadTail xs xs≠【】) \=> x∉xs (Head xs xs≠【】))
 
 export
+SizeMeansNotEmpty: Container a c => {auto 0 xs : c} -> (0 ⋕⎨xs⎬≐Sn: size xs = S n) -> Not (xs = [])
+SizeMeansNotEmpty {xs=_} this⋕⎨xs⎬≐sn Refl = void $ SIsNotZ (sym this⋕⎨xs⎬≐sn \=> ⋕⎨【】⎬≐0)
+
+export
 [UninhabitedConsIsNil] Container a c => Uninhabited (x::xs = (Nil {c})) where
     uninhabited x∷xs≐【】 = absurdity $ ConsAddsOne \=> (cong (x .#.) x∷xs≐【】) \=>  (∀x‥x⋕【】≐0)
 
@@ -126,8 +137,8 @@ ConcNilNilNil: Container a c => [] ++ [] = ([] {c})
 ConcNilNilNil = NilIsUnique (\x => ConcAddsCounts \=> cong2 (+) ∀x‥x⋕【】≐0 ∀x‥x⋕【】≐0)
 
 export
-TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> S (size @{ContainerSized} $ Tail xs xs≠【】) = size @{ContainerSized} xs
-TailIsShorter xs xs≠【】 = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong (size @{ContainerSized}) (HeadTail xs xs≠【】)
+TailIsShorter: Container a c => (xs: c) -> (0 xs≠【】: Not (xs = [] {c})) -> S (size $ Tail xs xs≠【】) = size xs
+TailIsShorter xs xs≠【】 = sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong size (HeadTail xs xs≠【】)
 
 ConcNotNilLeft: Container a c => {xs: c} -> {ys: c} -> {xs≠【】: Not (xs = [])} -> Not (xs ++ ys = (Nil {c}))
 ConcNotNilLeft prf = SIsNotZ (cong (+ (Head xs xs≠【】 .#. ys)) (ConsAddsOne \=> (cong (Head xs xs≠【】 .#.) $ HeadTail xs xs≠【】)) \=> sym ConcAddsCounts \=> cong (Head xs xs≠【】 .#.) prf \=> ∀x‥x⋕【】≐0)
@@ -138,7 +149,7 @@ ThereCanOnlyBeOneTail x x≠【】 =
   ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 (
     injective (
       sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=>
-        cong (size @{ContainerSized}) (HeadTail _ x≠【】) \=>
+        cong size (HeadTail _ x≠【】) \=>
           ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=>
             (cong S ⋕⎨【】⎬≐0)
     )
@@ -166,12 +177,12 @@ Remove: Container a c => (x: a) -> (xs: c) -> Subset c (
   \ys => (
     x .#. ys = 0,
     ((y: a) -> Not (y=x) -> y .#. xs = y .#. ys),
-    size @{ContainerSized} xs = x .#. xs + size @{ContainerSized} ys
+    size xs = x .#. xs + size ys
     )
   )
-Remove x xs with (sizeAccessible @{ContainerSized} xs)
+Remove x xs with (sizeAccessible xs)
   Remove x xs | acc with (IsNil xs)
-    Remove x _ | acc | (Yes Refl) = Element Nil (∀x‥x⋕【】≐0, \_ => \_ => Refl, cong (+ size @{ContainerSized} (Nil {c})) (sym ∀x‥x⋕【】≐0 ))
+    Remove x _ | acc | (Yes Refl) = Element Nil (∀x‥x⋕【】≐0, \_ => \_ => Refl, cong (+ size (Nil {c})) (sym ∀x‥x⋕【】≐0 ))
     Remove x xs | acc | (No xs≠【】) with (HeadTail xs xs≠【】)
       Remove x xs | Access acc | No xs≠【】 | (headXs∷TailXs≐xs) =
         let
@@ -185,10 +196,10 @@ Remove x xs with (sizeAccessible @{ContainerSized} xs)
           (Yes Refl) => Element tailXs⧷⎨x⎬ (
               x∉TailXs⧷⎨x⎬,
               \z => \z≠HeadXs => rewrite sym headXs∷TailXs≐xs in ((sym (ConsKeepsRest z≠HeadXs)) \=> prover z z≠HeadXs),
-              sym (cong (size @{ContainerSized {c}}) headXs∷TailXs≐xs)
+              sym (cong size headXs∷TailXs≐xs)
                 \=> (∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {x=Head xs xs≠【】} {xs=Tail xs xs≠【】})
-                \=> cong S otherer \=> (cong (+ size @{ContainerSized} tailXs⧷⎨x⎬) ConsAddsOne)
-                \=> (cong (\arg => (Head xs xs≠【】 .#. arg) + (size @{ContainerSized {c}} tailXs⧷⎨x⎬)) headXs∷TailXs≐xs)
+                \=> cong S otherer \=> (cong (+ size tailXs⧷⎨x⎬) ConsAddsOne)
+                \=> (cong (\arg => (Head xs xs≠【】 .#. arg) + (size tailXs⧷⎨x⎬)) headXs∷TailXs≐xs)
             )
           (No x≠HeadXs) => Element ((Head xs xs≠【】)::tailXs⧷⎨x⎬) (rewrite sym headXs∷TailXs≐xs in (
               sym (ConsKeepsRest x≠HeadXs) \=> x∉TailXs⧷⎨x⎬,
@@ -283,13 +294,13 @@ no x≠x' with (decEq x x')
 
 -- export
 -- 0 findFirst : DecEq a => Container a c => (x: a) -> (xs: c) -> Either (x .#. xs = 0) (Subset (c, c) (\(l, r) => (x .#. l = 0, l ++ x::r = xs)))
--- findFirst x xs with (sizeAccessible @{ContainerSized} xs)
+-- findFirst x xs with (sizeAccessible xs)
 --   findFirst x xxs | acc with (Iter xxs)
 --     findFirst x _ | acc | (Left Refl) = Left (∀x‥x⋕【】≐0)
 --     findFirst x _ | acc | (Right (Element (x', xs) Refl)) with (decEq x x')
 --       findFirst x _ | acc | (Right (Element (_, xs) Refl)) | (Yes Refl) = Right (Element (Nil, xs) (∀x‥x⋕【】≐0, ConcNilLeftNeutral))
 --       findFirst x _ | Access acc | (Right (Element (x', xs) Refl)) | (No x≠x') =
---         case (findFirst x xs | acc _ (replace {p = LTE (S (size @{ContainerSized} xs))} (sym $ SizedCons) reflexive)) of
+--         case (findFirst x xs | acc _ (replace {p = LTE (S (size xs))} (sym $ SizedCons) reflexive)) of
 --           (Left x∉xs) => Left ((sym $ ConsKeepsRest x≠x') \=> x∉xs)
 --           (Right (Element (l, r) (x∉l, Refl))) =>
 --             Right (Element (x'::l, r) ((sym $ ConsKeepsRest x≠x') \=> x∉l, ConcReduces))

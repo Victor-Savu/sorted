@@ -56,8 +56,6 @@ DecEq a =>  Container a (List a) where
               (No x≠x') => rewrite (decEqContraIsNo x≠x').snd in (ConcAddsCounts {c=List a})
     in rewrite ans in Refl
 
-  ContainerSized = MkSized length
-
   ⋕⎨【】⎬≐0 = Refl
 
   ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = Refl

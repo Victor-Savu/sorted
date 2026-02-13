@@ -106,7 +106,7 @@ tail (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_x_y) =
 ||| The head of a sorted list is relates to all of the elements in the tail of the list.
 export
 0 head : LinearOrder a rel => OutputSequence a c => (ys: c) -> (ys≠【】: Not (ys = [])) -> Sorted {c} {rel} ys -> RelatesToAll {c} rel (Head ys ys≠【】) (Tail ys ys≠【】)
-head ys ys≠【】 x with (sizeAccessible @{ContainerSized} ys)
+head ys ys≠【】 x with (sizeAccessible ys)
   head _ ys≠【】 [] | acc = void $ ys≠【】 Refl
   head _ ys≠【】 (Singleton x) | acc = \guestInTail => void $ SIsNotZ (sym guestInTail \=> (cong (guest .#.) $ ThereCanOnlyBeOneTail x ys≠【】) \=> ∀x‥x⋕【】≐0)
   head ys ys≠【】 (Several ys x∷y∷s≠【】 sorted_y∷s y∷s≠【】 rel_h_ht) | Access acc = case decEq guest (Head ys ys≠【】) of
