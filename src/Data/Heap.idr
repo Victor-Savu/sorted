@@ -21,15 +21,15 @@ Maybe' : Nat -> Type -> Type
 Maybe' 0 _ = ()
 Maybe' (S _) ty = ty
 
-export
+public export
 data Heap : LinearOrder a rel => (n: Nat) -> (h: Maybe' n a) -> Type where
-    Nil : Heap @{lo} 0 _
+    Nil : Heap @{lo} 0 ()
     Singleton: (h: a) -> Heap @{lo} {a} 1 h
     Prick : (h: a) -> (s: a) -> (0 h≤s: rel h s) -> Heap @{lo} {rel} 2 h
     Balanced : (h: a) -> (0 h≤l: rel h l) -> (0 h≤r: rel h r) -> (left: Heap @{lo} (1+m) l) -> (right: Heap @{lo} (1+m) r) -> Heap @{lo} {rel} (3+m+m) h
     Imbalanced : (h: a) -> (0 h≤l: rel h l) -> (0 h≤r: rel h r) -> (left: Heap @{lo} (2 + m) l) -> (right: Heap @{lo} (1+m) r) -> Heap @{lo} {rel} (4+m+m) h
 
-export
+public export
 length : LinearOrder a rel => Heap {rel} n h -> Nat
 length [] = 0
 length (Singleton h) = 1
@@ -38,6 +38,7 @@ length (Balanced h h≤l h≤r left right) = 1 + 2 * length right
 length (Imbalanced h h≤l h≤r left right) = 2 + 2 * length right
 
 
+public export
 actualMin :  DecEq a => LinearOrder a rel => a -> a -> a
 actualMin x y with (decEq x y)
   actualMin x x | (Yes Refl) = x
@@ -46,11 +47,13 @@ actualMin x y with (decEq x y)
     actualMin x y | (No x≠y) | Right y≤x = y
 
 
+public export
 min' : DecEq a => LinearOrder a rel => {n: Nat} -> a -> Maybe' n a -> a
 min' {n = 0} x _ = x
 min' {n = (S k)} x y = actualMin {rel} x y
 
 
+public export
 max' : DecEq a => LinearOrder a rel => a -> a -> a
 max' x y with (decEq x y)
   max' x x | (Yes Refl) = x
@@ -58,13 +61,16 @@ max' x y with (decEq x y)
     max' x y | (No x≠y) | (Left x≤y) = y
     max' x y | (No x≠y) | (Right y≤x) = x
 
+public export
 min'' : DecEq a => LinearOrder a rel => {m, n: Nat} -> Maybe' m a -> Maybe' n a -> Maybe' (m+n) a
 min'' {m = 0} _ x = rewrite plusZeroLeftNeutral n in x
 min'' {m = (S k)} x y = min' {rel} x y
 
+public export
 cong2' : {0 p: t1 -> Type} -> {0 c: p a} -> {0 d: p b} -> (0 f : ((v: t1) -> p v -> u)) -> (0 _ : a = b) -> (0 _ : c = d) -> f a c = f b d
 cong2' f Refl Refl = Refl
 
+public export
 smallerLessThanMin : DecEq a => LinearOrder a rel => {h, h', l: a} -> (h≤l: rel h l) -> (h≤h': rel h h') -> rel h (actualMin {rel} h' l)
 smallerLessThanMin h≤l h≤h' with (decEq h' l)
   smallerLessThanMin h≤l h≤h' | (Yes Refl) = h≤l
@@ -72,6 +78,7 @@ smallerLessThanMin h≤l h≤h' with (decEq h' l)
     smallerLessThanMin h≤l h≤h' | (No h'≠l) | (Left h'≤l) = h≤h'
     smallerLessThanMin h≤l h≤h' | (No h'≠l) | (Right l≤h') = h≤l
 
+public export
 minLessThanGreater : DecEq a => LinearOrder a rel => {h, h', l: a} -> (h≤l: rel h l) -> rel (actualMin {rel} h h') l
 minLessThanGreater h≤l with (decEq h h')
   minLessThanGreater h≤l | (Yes Refl) = h≤l
@@ -79,6 +86,7 @@ minLessThanGreater h≤l with (decEq h h')
     minLessThanGreater h≤l | (No h≠h') | (Left h≤h') = h≤l
     minLessThanGreater h≤l | (No h≠h') | (Right h'≤h) = (h'≤h \=> h≤l)
 
+public export
 congMin : DecEq a => LinearOrder a rel => {h, h', l, l': a} -> (h≤l: rel h l) -> (h'≤l': rel h' l') -> rel (actualMin {rel} h h') (actualMin {rel} l l')
 congMin h≤l h'≤l' with (decEq h h')
   congMin h≤l h≤l' | (Yes Refl) = smallerLessThanMin {rel} h≤l' h≤l
@@ -86,6 +94,7 @@ congMin h≤l h'≤l' with (decEq h h')
     congMin h≤l h'≤l' | (No h≠h') | (Left h≤h') = smallerLessThanMin {rel} (h≤h' \=> h'≤l') h≤l
     congMin h≤l h'≤l' | (No h≠h') | (Right h'≤h) = smallerLessThanMin {rel} h'≤l' (h'≤h \=> h≤l)
 
+public export
 min≤max : DecEq a => LinearOrder a rel => {h, h': a} -> rel (actualMin {rel} h h') (max' {rel} h h')
 min≤max with (decEq h h')
   min≤max | (Yes Refl) = reflexive
@@ -93,6 +102,7 @@ min≤max with (decEq h h')
     min≤max | (No h≠h') | (Left h≤h') = h≤h'
     min≤max | (No h≠h') | (Right h'≤h) = h'≤h
 
+public export
 minCommutes : DecEq a => LinearOrder a rel => {h, h': a} -> rel (actualMin {rel} h h') (actualMin {rel} h' h)
 minCommutes with (decEq h h')
   minCommutes | (Yes Refl) = rewrite decEqSelfIsYes {x=h'} in reflexive
@@ -100,6 +110,7 @@ minCommutes with (decEq h h')
     minCommutes | (No h≠h') | (Left h≤h') = (smallerLessThanMin {rel} reflexive h≤h')
     minCommutes | (No h≠h') | (Right h'≤h) = (smallerLessThanMin {rel} h'≤h reflexive)
 
+public export
 minCom : DecEq a => LinearOrder a rel => {x, y: a} -> actualMin {rel} x y = actualMin {rel} y x
 minCom with (decEq x y)
   minCom | (Yes Refl) = rewrite decEqSelfIsYes {x=y} in Refl
@@ -115,19 +126,23 @@ minCom with (decEq x y)
         minCom | (No x≠y) | (Right y≤x) | (No y≠x) | (Left _) = Refl
         minCom | (No x≠y) | (Right y≤x) | (No y≠x) | (Right x≤y) = void $ x≠y (antisymmetric x≤y y≤x)
 
+public export
 plusSuccLeftSucc : (a, b: Nat) ->  plus (S a) b = S (plus a b)
 plusSuccLeftSucc _ _ = Refl
 
+public export
 0 connexLeft : DecEq a => LinearOrder a rel => rel x y -> Subset (rel x y) (\x≤y => connex {rel} x≠y = Left x≤y)
 connexLeft x≤y with (connex {rel} x≠y)
   connexLeft _ | (Left x≤y) = Element x≤y Refl
   connexLeft x≤y | (Right y≤x) = void $ x≠y (antisymmetric x≤y y≤x)
 
+public export
 0 connexRight : DecEq a => LinearOrder a rel => rel y x -> Subset (rel y x) (\h≤x => connex {rel} x≠y = Right h≤x)
 connexRight y≤x with (connex {rel} x≠y)
   connexRight y≤x | (Left x≤y) = void $ x≠y (antisymmetric x≤y y≤x)
   connexRight _ | (Right y≤x) = Element y≤x Refl
 
+public export
 0 aminLeft : DecEq a => LinearOrder a rel => rel x y -> actualMin {rel} x y = x
 aminLeft x≤y with (decEq x y)
   aminLeft x≤y | (Yes Refl) = Refl
@@ -135,6 +150,7 @@ aminLeft x≤y with (decEq x y)
     aminLeft _ | (No x≠y) | (Left x≤y) = Refl
     aminLeft x≤y | (No x≠y) | (Right y≤x) = void $ x≠y (antisymmetric x≤y y≤x)
 
+public export
 0 aminRight : DecEq a => LinearOrder a rel => rel y x -> Not (x = y) -> actualMin {rel} x y = y
 aminRight y≤x x≠y with (decEq x y)
   aminRight y≤x x≠y | (Yes Refl) = Refl
@@ -142,6 +158,7 @@ aminRight y≤x x≠y with (decEq x y)
     aminRight y≤x x≠y | (No x≠'y) | (Left x≤y) = void $ x≠'y (antisymmetric x≤y y≤x)
     aminRight _ x≠y | (No x≠'y) | (Right y≤x) = Refl
 
+public export
 0 maxLeft : DecEq a => LinearOrder a rel => rel x y -> max' {rel} x y = y
 maxLeft x≤y with (decEq x y)
   maxLeft x≤y | (Yes Refl) = Refl
@@ -149,6 +166,7 @@ maxLeft x≤y with (decEq x y)
     maxLeft _ | (No x≠y) | (Left x≤y) = Refl
     maxLeft x≤y | (No x≠y) | (Right y≤x) = void $ x≠y (antisymmetric x≤y y≤x)
 
+public export
 0 maxRight : DecEq a => LinearOrder a rel => rel y x -> Not (x = y) -> max' {rel} x y = x
 maxRight y≤x x≠y with (decEq x y)
   maxRight y≤x x≠y | (Yes Refl) = Refl
@@ -157,6 +175,7 @@ maxRight y≤x x≠y with (decEq x y)
     maxRight _ _ | (No x≠y) | (Right y≤x) = Refl
 
 
+public export
 (::) : DecEq a => LinearOrder a rel => (x: a) -> Heap {a} {rel} n h -> Heap {a} {rel} (1+n) (min' {n} {rel} x h)
 (::) x [] = Singleton x
 (::) x (Singleton h) = Prick (actualMin {rel} x h) (max' {rel} x h) (min≤max {rel})
@@ -186,6 +205,7 @@ maxRight y≤x x≠y with (decEq x y)
 
 %ambiguity_depth 6
 
+public export
 (++) : DecEq a => LinearOrder a rel => Heap {a} {rel} m h -> Heap {a} {rel} n h' -> Heap {a} {rel} (m+n) (min'' {rel} {m} {n} h h')
 (++) [] y = y
 (++) (Singleton h) y = h::y
@@ -297,6 +317,7 @@ maxRight y≤x x≠y with (decEq x y)
             (max' {rel} h h' :: right ++ right')
           )
 
+public export
 cnt : DecEq a => LinearOrder a rel => (x: a) -> (xs: Heap {rel} n h) -> Nat
 cnt x [] = 0
 cnt x (Singleton h) with (decEq x h)
@@ -320,9 +341,11 @@ cnt x (Imbalanced h hl hr left right)  with (decEq x h)
     cnt x (Imbalanced h hl hr left right) | (No x≠h) | (Left _) = 0
     cnt x (Imbalanced h hl hr left right) | (No x≠h) | (Right _) = cnt x left + cnt x right
 
+public export
 0 strict : DecEq a => LinearOrder a rel  => (x≠h: (x=h -> Void)) -> (x≤h: rel x h) -> (h≤s: rel h s) -> x=s -> Void
 strict x≠h x≤h h≤s Refl = void $ x≠h (antisymmetric x≤h h≤s)
 
+public export
 0 cntTooSmall : DecEq a => LinearOrder a rel => (x: a) -> (x≠h: (x=h -> Void)) -> (x≤h: rel x h) -> (xs: Heap {rel} (S n) h) -> cnt x xs = 0
 cntTooSmall x x≠h x≤h (Singleton h) = rewrite snd $ decEqContraIsNo x≠h in Refl
 cntTooSmall x x≠h x≤h (Prick h s h≤s) =
@@ -339,7 +362,8 @@ cntTooSmall x x≠h x≤h (Imbalanced h h≤l h≤r left right) with (decEq x h)
   cntTooSmall x _ x≤h (Imbalanced h h≤l h≤r left right) | (No x≠h) with (connex {rel} x≠h)
     cntTooSmall x _ _ (Imbalanced h h≤l h≤r left right) | (No x≠h) | (Left x≤h) = Refl
     cntTooSmall x _ x≤h (Imbalanced h h≤l h≤r left right) | (No x≠h) | (Right h≤x) = void $ x≠h $ antisymmetric x≤h h≤x
-  
+
+public export
 [ui] DecEq a => LinearOrder a rel => (xs: Heap {rel} (S n) h) => Uninhabited (forall x . cnt {rel} {n=S n} x xs = 0) where
     uninhabited {xs = (Singleton h)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
     uninhabited {xs = (Prick h s h≤s)} absrd with (decEq h s)
@@ -348,6 +372,7 @@ cntTooSmall x x≠h x≤h (Imbalanced h h≤l h≤r left right) with (decEq x h)
     uninhabited {xs = (Balanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
     uninhabited {xs = (Imbalanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
 
+public export
 covering
 0 ConsAddsOne : DecEq a => LinearOrder a rel => (xs: Heap n h) -> forall x. (1 + cnt {rel} {n} x xs) = cnt {rel} {n=S n} x (Heap.(::) {rel} x xs)
 ConsAddsOne [] = rewrite decEqSelfIsYes {x} in Refl

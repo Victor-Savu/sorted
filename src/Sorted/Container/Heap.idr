@@ -10,32 +10,54 @@ import Sorted.Container
 
 export
 data HeapFamily : LinearOrder a rel => Type -> Type where
-    MkHeapFamily : Heap @{lo} {a} {rel} n h -> HeapFamily @{lo} {rel} a
+  MkHeapFamily : Heap @{lo} {a} {rel} n h -> HeapFamily @{lo} {rel} a
+
+LinearOrder a rel => Sized (HeapFamily {rel} a) where
+  size (MkHeapFamily x) = length x
 
 export
 DecEq a => LinearOrder a rel => Container a (HeapFamily {rel} a) where
 
-    x .#. h = ?help
+    x .#. (MkHeapFamily h) = cnt x h
 
-    [] = []
+    [] = MkHeapFamily []
 
-    IsNil h = ?helpIsNil
+    IsNil (MkHeapFamily []) = Yes Refl
+    IsNil (MkHeapFamily (Singleton h)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
+    IsNil (MkHeapFamily (Prick h s h≤s)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
+    IsNil (MkHeapFamily (Balanced h h≤l h≤r left right)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
+    IsNil (MkHeapFamily (Imbalanced h h≤l h≤r left right)) = No (\x∷xs≐【】 => case x∷xs≐【】 of Refl impossible)
 
-    ∀x‥x⋕【】≐0 = ?help1
+    ∀x‥x⋕【】≐0 = Refl
 
-    x :: y = ?help2
+    x :: (MkHeapFamily h) = MkHeapFamily (x :: h)
 
-    Cons with (decEq x' x)
-      Cons | (Yes Refl) = Left ?help3
-      Cons | (No x'≠x) = Right ?help4
+    ConsAddsOne =
+      let
+        0 l0: (S (x .#. xs) = x .#. (x :: xs)) =
+          case xs of
+            (MkHeapFamily []) => rewrite decEqSelfIsYes {x} in Refl
+            (MkHeapFamily (Singleton h)) => ?p0_2
+            (MkHeapFamily (Prick h s h≤s)) => ?p0_3
+            (MkHeapFamily (Balanced h h≤l h≤r left right)) => ?p0_4
+            (MkHeapFamily (Imbalanced h h≤l h≤r left right)) => ?p0_5
+      in rewrite l0 in Refl
+      -- let
+      --   0 l0: ((1 + x .#. xs) = x .#. (x :: xs)) = ?p0
+      -- in rewrite l0 in Refl
 
-    ConsBisurjective {x∷xs} x∷xs≠【】 = ?help5
+    ConsKeepsRest x'≠x = ?p1
+      -- let
+      --   0 l0 : (x' .#. xs =  x' .#. (x::xs)) = ?p1
+      -- in rewrite l0 in Refl
+
+    Head x∷xs  x∷xs≠【】 = ?r0
+    Tail x∷xs  x∷xs≠【】 = ?r1
+    HeadTail x∷xs  x∷xs≠【】 = ?r2
 
     xs ++ ys = ?help6
 
-    ConcAddsCounts {xs} {ys} = ?help7
-
-    ContainerSized = MkSized ?help8
+    ConcAddsCounts = ?help7
 
     ⋕⎨【】⎬≐0 = ?help9
 
