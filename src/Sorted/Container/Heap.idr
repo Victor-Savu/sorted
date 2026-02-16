@@ -78,7 +78,7 @@ DecEq a => LinearOrder a rel => Container a (HeapFamily {rel} a) where
 
 --     ConsAddsOne {xs = (MkHeapFamily xs)} = ConsAddsOne xs
 
---     ConsKeepsRest {xs=MkHeapFamily []} x'≠x = let Element _ p = no x'≠x in rewrite p in Refl
+--     ConsKeepsRest {xs=MkHeapFamily []} x'≠x = rewrite decEqContraIsNo x'≠x in Refl
 --     ConsKeepsRest {xs=MkHeapFamily (Singleton h)} x'≠x = ?ckr_1
 --     ConsKeepsRest {xs=MkHeapFamily (Prick h s h≤s)} x'≠x = ?ckr_2
 --     ConsKeepsRest {xs=MkHeapFamily (Balanced h h≤l h≤r left right)} x'≠x = ?ckr_3

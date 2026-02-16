@@ -368,7 +368,7 @@ public export
     uninhabited {xs = (Singleton h)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
     uninhabited {xs = (Prick h s h≤s)} absrd with (decEq h s)
       uninhabited {xs = (Prick h h h≤s)} absrd | (Yes Refl) = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
-      uninhabited {xs = (Prick h s h≤s)} absrd | (No h≠s) = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in let Element _ p = no h≠s in rewrite p in Refl) \=> absrd {x=h})
+      uninhabited {xs = (Prick h s h≤s)} absrd | (No h≠s) = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in rewrite (decEqContraIsNo h≠s).snd in Refl) \=> absrd {x=h})
     uninhabited {xs = (Balanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
     uninhabited {xs = (Imbalanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
 
@@ -379,12 +379,12 @@ ConsAddsOne [] = rewrite decEqSelfIsYes {x} in Refl
 ConsAddsOne (Singleton h) with (decEq x h)
   ConsAddsOne (Singleton h) | (Yes Refl) = rewrite decEqSelfIsYes {x=h} in rewrite decEqSelfIsYes {x=h} in Refl
   ConsAddsOne (Singleton h) | (No x≠h) with (connex {rel} x≠h)
-    ConsAddsOne (Singleton h) | (No x≠h) | (Left x≤h) = rewrite decEqSelfIsYes {x} in let Element _ p = no x≠h in rewrite p in Refl
-    ConsAddsOne (Singleton h) | (No x≠h) | (Right h≤x) = let Element _ p = no x≠h in rewrite p in rewrite decEqSelfIsYes {x} in Refl
+    ConsAddsOne (Singleton h) | (No x≠h) | (Left x≤h) = rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠h).snd in Refl
+    ConsAddsOne (Singleton h) | (No x≠h) | (Right h≤x) = rewrite (decEqContraIsNo x≠h).snd in rewrite decEqSelfIsYes {x} in Refl
 ConsAddsOne (Prick h s h≤s) with (decEq x h)
   ConsAddsOne (Prick h s h≤s) | (Yes Refl) with (decEq h s)
     ConsAddsOne (Prick s s h≤s) | (Yes Refl) | (Yes Refl) = rewrite decEqSelfIsYes {x=s} in rewrite decEqSelfIsYes {x=s} in Refl
-    ConsAddsOne (Prick h s h≤s) | (Yes Refl) | (No h≠s) = rewrite decEqSelfIsYes {x=h} in rewrite decEqSelfIsYes {x=h} in let Element _ p = no h≠s in rewrite p in Refl
+    ConsAddsOne (Prick h s h≤s) | (Yes Refl) | (No h≠s) = rewrite decEqSelfIsYes {x=h} in rewrite decEqSelfIsYes {x=h} in rewrite (decEqContraIsNo h≠s).snd in Refl
   ConsAddsOne (Prick h s h≤s) | (No x≠h) with (decEq x s)
     ConsAddsOne (Prick h s h≤s) | (No s≠h) | (Yes Refl) with (connex {rel} s≠h)
       ConsAddsOne (Prick h s h≤s) | (No s≠h) | (Yes Refl) | (Left s≤h) = void $ s≠h (antisymmetric s≤h h≤s)
@@ -398,7 +398,7 @@ ConsAddsOne (Prick h s h≤s) with (decEq x h)
               ConsAddsOne (Prick h s h≤s) | (No s≠h) | (Yes Refl) | (Right h≤'s) | (No h≠s) | (Left h≤''s) | (No s≠'h) | (Right h≤'''s) = rewrite decEqSelfIsYes {x=s} in Refl
           ConsAddsOne (Prick h s h≤s) | (No s≠h) | (Yes Refl) | (Right h≤'s) | (No h≠s) | (Right s≤h) = void $ s≠h (antisymmetric s≤h h≤s)
     ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) with (connex {rel} x≠h)
-      ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Left x≤h) = rewrite decEqSelfIsYes {x} in let Element _ p = no x≠h in rewrite p in let Element _ p = no x≠s in rewrite p in Refl
+      ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Left x≤h) = rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠h).snd in rewrite (decEqContraIsNo x≠s).snd in Refl
       ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) with (decEq h x)
         ConsAddsOne (Prick h s h≤s) | (No h≠h) | (No h≠s) | (Right h≤h) | (Yes Refl) = void $ h≠h Refl
         ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) | (No h≠x) with (decEq x h)
@@ -407,7 +407,7 @@ ConsAddsOne (Prick h s h≤s) with (decEq x h)
             ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) | (No h≠x) | (No x≠'h) | (Left h≤'x) with (connex {rel} x≠'h)
               ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) | (No h≠x) | (No x≠'h) | (Left h≤'x) | (Left x≤h) = void $ x≠h (antisymmetric x≤h h≤x)
               ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) | (No h≠x) | (No x≠'h) | (Left h≤'x) | (Right h≤''x) =
-                rewrite decEqSelfIsYes {x} in let Element _ p = no x≠s in rewrite p in Refl
+                rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠s).snd in Refl
             ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) | (No h≠x) | (No x≠'h) | (Right x≤h) = void $ x≠h (antisymmetric x≤h h≤x)
 ConsAddsOne (Balanced h {l} {r} h≤l h≤r left right) with (decEq x h)
   ConsAddsOne (Balanced h {l = l} {r = r} h≤l h≤r left right) | (Yes Refl) = rewrite decEqSelfIsYes {x=h} in cong (\l => S(l + cnt h right)) (ConsAddsOne {x=h} left)
