@@ -52,6 +52,10 @@ length (Balanced h h≤l h≤r left right) = 1 + 2 * length right
 length (Imbalanced h h≤l h≤r left right) = 2 + 2 * length right
 
 public export
+LinearOrder a rel => Sized (Heap {rel} n h) where
+  size = length
+
+public export
 actualMin :  DecEq a => LinearOrder a rel => a -> a -> a
 actualMin x y with (decEq x y)
   actualMin x x | (Yes Refl) = x
@@ -351,76 +355,82 @@ public export
     uninhabited {xs = (Balanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
     uninhabited {xs = (Imbalanced h h≤l h≤r left right)} absrd = SIsNotZ $ ((rewrite decEqSelfIsYes {x=h} in Refl) \=> absrd {x=h})
 
-public export
-covering
-0 ConsAddsOne : DecEq a => LinearOrder a rel => (xs: Heap n h) -> forall x. (1 + cnt {rel} {n} x xs) = cnt {rel} {n=S n} x (Heap.(::) {rel} x xs)
-ConsAddsOne [] = rewrite decEqSelfIsYes {x} in Refl
-ConsAddsOne (Singleton h) with (decEq x h)
-  ConsAddsOne (Singleton h) | (Yes Refl) =
-    rewrite decEqSelfIsYes {x=h} in
-    rewrite decEqSelfIsYes {x=h} in Refl
-  ConsAddsOne (Singleton h) | (No x≠h) with (connex {rel} x≠h)
-    ConsAddsOne (Singleton h) | (No x≠h) | (Left x≤h) =
-      rewrite decEqSelfIsYes {x} in
-      rewrite (decEqContraIsNo x≠h).snd in Refl
-    ConsAddsOne (Singleton h) | (No x≠h) | (Right h≤x) =
-      rewrite (decEqContraIsNo x≠h).snd in
-      rewrite decEqSelfIsYes {x} in Refl
-ConsAddsOne (Prick h s h≤s) with (decEq x h)
-  ConsAddsOne (Prick h s h≤s) | (Yes Refl) with (decEq h s)
-    ConsAddsOne (Prick s s h≤s) | (Yes Refl) | (Yes Refl) =
-      rewrite decEqSelfIsYes {x=s} in rewrite decEqSelfIsYes {x=s} in Refl
-    ConsAddsOne (Prick h s h≤s) | (Yes Refl) | (No h≠s) =
+0 ConsAddsOne': DecEq a => LinearOrder a rel => (0 xs: Heap n h) -> forall x. (1 + cnt {rel} {n} x xs) = cnt {rel} {n=S n} x (Heap.(::) {rel} x xs)
+ConsAddsOne' {h} xs with (wellFounded {rel=LT} n)
+  ConsAddsOne' {h=()} [] | (Access acc) = rewrite decEqSelfIsYes {x} in Refl
+  ConsAddsOne' {h} (Singleton h) | (Access acc) with (decEq x h)
+    ConsAddsOne' {h} (Singleton h) | (Access acc) | (Yes Refl) =
       rewrite decEqSelfIsYes {x=h} in
+      rewrite decEqSelfIsYes {x=h} in Refl
+    ConsAddsOne' {h} (Singleton h) | (Access acc) | (No x≠h) with (connex {rel} x≠h)
+      ConsAddsOne' {h} (Singleton h) | (Access acc) | (No x≠h) | (Left x≤h) =
+        rewrite decEqSelfIsYes {x} in
+        rewrite (decEqContraIsNo x≠h).snd in Refl
+      ConsAddsOne' {h} (Singleton h) | (Access acc) | (No x≠h) | (Right h≤x) =
+        rewrite (decEqContraIsNo x≠h).snd in
+        rewrite decEqSelfIsYes {x} in Refl
+  ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) with (decEq x h)
+    ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (Yes Refl) with (decEq h s)
+      ConsAddsOne' {h} (Prick s s h≤s) | (Access acc) | (Yes Refl) | (Yes Refl) =
+        rewrite decEqSelfIsYes {x=s} in rewrite decEqSelfIsYes {x=s} in Refl
+      ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (Yes Refl) | (No h≠s) =
+        rewrite decEqSelfIsYes {x=h} in
+        rewrite decEqSelfIsYes {x=h} in
+        rewrite (decEqContraIsNo h≠s).snd in Refl
+    ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (No x≠h) with (decEq x s)
+      ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (No s≠h) | (Yes Refl) =
+        let (h≤s ** connex_h≤s) = connexRelIsRight s≠h h≤s in rewrite connex_h≤s in
+        let (s≠h ** decno) = decEqContraIsNo $ negEqSym s≠h in rewrite decno in 
+        let (h≤s ** connex_h≤s) = connexRelIsLeft s≠h h≤s in rewrite connex_h≤s in
+        let (s≠h ** decno) = decEqContraIsNo $ negEqSym s≠h in rewrite decno in 
+        let (h≤s ** connex_h≤s) = connexRelIsRight s≠h h≤s in rewrite connex_h≤s in
+        rewrite decEqSelfIsYes {x=s} in Refl
+      ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (No x≠h) | (No x≠s) with (connex {rel} x≠h)
+        ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (No x≠h) | (No x≠s) | (Left x≤h) =
+          rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠h).snd in rewrite (decEqContraIsNo x≠s).snd in Refl
+        ConsAddsOne' {h} (Prick h s h≤s) | (Access acc) | (No x≠h) | (No x≠s) | (Right h≤x) =
+          let (h≠x ** decno) = decEqContraIsNo $ negEqSym x≠h in rewrite decno in
+          let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
+          let (h≤x ** connex_h≤x) = connexRelIsLeft h≠x h≤x in rewrite connex_h≤x in
+          let (h≤x ** connex_h≤x) = connexRelIsRight x≠h h≤x in rewrite connex_h≤x in
+          rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠s).snd in Refl
+  ConsAddsOne' {h} (Balanced h h≤l h≤r left right) | (Access acc) with (decEq x h)
+    ConsAddsOne' {h} (Balanced h h≤l h≤r left right) | (Access acc) | (Yes Refl) =
       rewrite decEqSelfIsYes {x=h} in
-      rewrite (decEqContraIsNo h≠s).snd in Refl
-  ConsAddsOne (Prick h s h≤s) | (No x≠h) with (decEq x s)
-    ConsAddsOne (Prick h s h≤s) | (No s≠h) | (Yes Refl) =
-      let (h≤s ** connex_h≤s) = connexRelIsRight s≠h h≤s in rewrite connex_h≤s in
-      let (s≠h ** decno) = decEqContraIsNo $ negEqSym s≠h in rewrite decno in 
-      let (h≤s ** connex_h≤s) = connexRelIsLeft s≠h h≤s in rewrite connex_h≤s in
-      let (s≠h ** decno) = decEqContraIsNo $ negEqSym s≠h in rewrite decno in 
-      let (h≤s ** connex_h≤s) = connexRelIsRight s≠h h≤s in rewrite connex_h≤s in
-      rewrite decEqSelfIsYes {x=s} in Refl
-    ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) with (connex {rel} x≠h)
-      ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Left x≤h) =
-        rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠h).snd in rewrite (decEqContraIsNo x≠s).snd in Refl
-      ConsAddsOne (Prick h s h≤s) | (No x≠h) | (No x≠s) | (Right h≤x) =
+      cong (\l => S(l + cnt h right))
+        (ConsAddsOne' left | acc _ (LTESucc (LTESucc (lteSuccRight $ lteAddRight _))))
+    ConsAddsOne' {h} (Balanced h h≤l h≤r left right) | (Access acc) | (No x≠h) with (connex {rel} x≠h)
+      ConsAddsOne' {h} (Balanced h h≤l h≤r left right) | (Access acc) | (No x≠h) | (Left x≤h) =
+        rewrite decEqSelfIsYes {x} in
+          cong S (sym (cong2 (+)
+            (cntTooSmall {rel} x (\x_minhl => x≠h (x_minhl \=> (aminLeft h≤l))) (smallerLessThanMin {rel} (x≤h \=> h≤l) x≤h) _)
+            (cntTooSmall {rel} x (strict x≠h x≤h h≤r) (x≤h \=> h≤r) _)
+          ))
+      ConsAddsOne' {h} (Balanced h h≤l h≤r left right) | (Access acc) | (No x≠h) | (Right h≤x) =
         let (h≠x ** decno) = decEqContraIsNo $ negEqSym x≠h in rewrite decno in
-        let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
         let (h≤x ** connex_h≤x) = connexRelIsLeft h≠x h≤x in rewrite connex_h≤x in
+        let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
         let (h≤x ** connex_h≤x) = connexRelIsRight x≠h h≤x in rewrite connex_h≤x in
-        rewrite decEqSelfIsYes {x} in rewrite (decEqContraIsNo x≠s).snd in Refl
-ConsAddsOne (Balanced h h≤l h≤r left right) with (decEq x h)
-  ConsAddsOne (Balanced h h≤l h≤r left right) | (Yes Refl) = rewrite decEqSelfIsYes {x=h} in cong (\l => S(l + cnt h right)) (ConsAddsOne {x=h} left)
-  ConsAddsOne (Balanced h h≤l h≤r left right) | (No x≠h) with (connex {rel} x≠h)
-    ConsAddsOne (Balanced h h≤l h≤r left right) | (No x≠h) | (Left x≤h) =
-      rewrite decEqSelfIsYes {x} in
-        cong S (sym (cong2 (+)
-          (cntTooSmall {rel} x (\x_minhl => x≠h (x_minhl \=> (aminLeft h≤l))) (smallerLessThanMin {rel} (x≤h \=> h≤l) x≤h) _)
-          (cntTooSmall {rel} x (strict x≠h x≤h h≤r) (x≤h \=> h≤r) _)
-        ))
-    ConsAddsOne (Balanced h h≤l h≤r left right) | (No x≠h) | (Right h≤x) =
-      let (h≠x ** decno) = decEqContraIsNo $ negEqSym x≠h in rewrite decno in
-      let (h≤x ** connex_h≤x) = connexRelIsLeft h≠x h≤x in rewrite connex_h≤x in
-      let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
-      let (h≤x ** connex_h≤x) = connexRelIsRight x≠h h≤x in rewrite connex_h≤x in
-      cong (+ (cnt x right)) $ ConsAddsOne {x} left
-ConsAddsOne (Imbalanced h h≤l h≤r left right) with (decEq x h)
-  ConsAddsOne (Imbalanced h h≤l h≤r left right) | (Yes Refl) =
-    rewrite decEqSelfIsYes {x=h} in
-    cong S ((plusSuccRightSucc _ _) \=> cong (cnt h left +) (ConsAddsOne right))
-  ConsAddsOne (Imbalanced h h≤l h≤r left right) | (No x≠h) with (connex {rel} x≠h)
-    ConsAddsOne (Imbalanced h h≤l h≤r left right) | (No x≠h) | (Left x≤h) =
-      rewrite decEqSelfIsYes {x} in
-        cong S (
-          cong2 (+)
-            (sym $ cntTooSmall {rel} x (strict x≠h x≤h h≤l) (x≤h \=> h≤l) left)
-            (sym $ cntTooSmall {rel} x (strict {rel} x≠h x≤h (smallerLessThanMin {rel} h≤r reflexive)) (smallerLessThanMin {rel} (x≤h \=> h≤r) x≤h) (h::right))
-          )
-    ConsAddsOne (Imbalanced h h≤l h≤r left right) | (No x≠h) | (Right h≤x) =
-      let (h≠x ** decno) = decEqContraIsNo $ negEqSym x≠h in rewrite decno in
-      let (h≤x ** connex_h≤x) = connexRelIsLeft h≠x h≤x in rewrite connex_h≤x in
-      let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
-      let (h≤x ** connex_h≤x) = connexRelIsRight x≠h h≤x in rewrite connex_h≤x in
-      plusSuccRightSucc _ _ \=> cong (cnt x left +) (ConsAddsOne {x} right)
+        cong (+ (cnt x right)) (ConsAddsOne' left | acc _ (LTESucc (LTESucc (lteSuccRight $ lteAddRight _))))
+  ConsAddsOne' {h} (Imbalanced h h≤l h≤r left right) | (Access acc) with (decEq x h)
+    ConsAddsOne' {h} (Imbalanced h h≤l h≤r left right) | (Access acc) | (Yes Refl) =
+      rewrite decEqSelfIsYes {x=h} in
+      cong S ((plusSuccRightSucc _ _) \=> cong (cnt h left +) (ConsAddsOne' right | acc _ (LTESucc (LTESucc (lteSuccRight $ lteSuccRight $ lteAddRight _)))))
+    ConsAddsOne' {h} (Imbalanced h h≤l h≤r left right) | (Access acc) | (No x≠h) with (connex {rel} x≠h)
+      ConsAddsOne' {h} (Imbalanced h h≤l h≤r left right) | (Access acc) | (No x≠h) | (Left x≤h) =
+        rewrite decEqSelfIsYes {x} in
+          cong S (
+            cong2 (+)
+              (sym $ cntTooSmall {rel} x (strict x≠h x≤h h≤l) (x≤h \=> h≤l) left)
+              (sym $ cntTooSmall {rel} x (strict {rel} x≠h x≤h (smallerLessThanMin {rel} h≤r reflexive)) (smallerLessThanMin {rel} (x≤h \=> h≤r) x≤h) (h::right))
+            )
+      ConsAddsOne' {h} (Imbalanced h h≤l h≤r left right) | (Access acc) | (No x≠h) | (Right h≤x) =
+        let (h≠x ** decno) = decEqContraIsNo $ negEqSym x≠h in rewrite decno in
+        let (h≤x ** connex_h≤x) = connexRelIsLeft h≠x h≤x in rewrite connex_h≤x in
+        let (x≠h ** decno) = decEqContraIsNo x≠h in rewrite decno in
+        let (h≤x ** connex_h≤x) = connexRelIsRight x≠h h≤x in rewrite connex_h≤x in
+        plusSuccRightSucc _ _ \=> cong (cnt x left +) (ConsAddsOne' right | acc _ (LTESucc (LTESucc (lteSuccRight $ lteSuccRight $ lteAddRight _))))
+
+public export
+ConsAddsOne: DecEq a => LinearOrder a rel => (0 x: a) -> (0 xs: Heap n h) -> (1 + cnt {rel} {n} x xs) = cnt {rel} {n=S n} x (Heap.(::) {rel} x xs)
+ConsAddsOne x xs = rewrite ConsAddsOne' xs {x} in Refl
