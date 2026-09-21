@@ -1,6 +1,6 @@
 module Data.Heap
 
--- import Algebra.Solver.Semiring
+import Algebra.Solver.Semiring
 import Control.Order
 import Control.Relation
 import Data.Fin
