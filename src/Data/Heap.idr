@@ -226,16 +226,6 @@ public export
 relationWithHead {n = 0} h x = ()
 relationWithHead {n = (S k)} h x = rel h h'
 
-Tail: DecEq a => LinearOrder a rel => Heap {a} {rel} (S (S n)) h -> (h': a ** Subset (Heap {a} {rel} (S n) h') (\_ => rel h h'))
-Tail (Prick h s h≤s) = (s ** Element (Singleton s) h≤s)
-Tail (Balanced h h≤l h≤r left right) =
-  let Element hl is_l = Head left in
-  let Element hr is_r = Head right in
-  case order @{SCLeft} {rel} hl hr of
-    Left hl≤hr => (hl ** rewrite is_l in Element ?Tail_rhs_2_rhs2_6 h≤l)
-    Right hr≤hl => (hr ** rewrite is_r in Element ?Tail_rhs_2_rhs2_7 h≤r)
-Tail (Imbalanced h h≤l h≤r left right) = ?Tail_rhs_3
-
 public export
 (++) : DecEq a => LinearOrder a rel => Heap {a} {rel} m h -> Heap {a} {rel} n h' -> Heap {a} {rel} (m+n) (min'' {rel} {m} {n} h h')
 (++) [] y = y
@@ -347,6 +337,21 @@ public export
             (rewrite solveNat [m,n] (1 + ((0 +. m) + (1 +. n))) ((0 +. m) + (2 +. n)) in left ++ left')
             (Max' {rel} h h' :: right ++ right')
           )
+
+Tail: DecEq a => LinearOrder a rel => Heap {a} {rel} (S (S n)) h -> (h': a ** Subset (Heap {a} {rel} (S n) h') (\_ => rel h h'))
+Tail (Prick h s h≤s) = (s ** Element (Singleton s) h≤s)
+Tail (Balanced h h≤l h≤r left right) =
+  let
+    lr = left ++ right
+    Element hlr is_head = Head lr
+  in
+    (hlr ** rewrite is_head in Element lr (smallerLessThanMin {rel} h≤r h≤l))
+Tail (Imbalanced h h≤l h≤r left right) = 
+  let
+    lr = left ++ right
+    Element hlr is_head = Head lr
+  in
+    (hlr ** rewrite is_head in Element lr (smallerLessThanMin {rel} h≤r h≤l))
 
 public export
 cnt : DecEq a => LinearOrder a rel => (x: a) -> (xs: Heap {rel} n h) -> Nat
