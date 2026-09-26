@@ -1,6 +1,8 @@
 module Sorted.Container.Heap
 
 import Data.Heap
+import Data.Nat
+import Decidable.Equality
 import Control.Order
 import Control.Relation
 
@@ -35,35 +37,98 @@ DecEq a => LinearOrder a rel => Container a (HeapFamily {rel} a) where
     ConsAddsOne =
       let
         0 l0: (S (x .#. xs) = x .#. (x :: xs)) =
-          case xs of
-            (MkHeapFamily []) => rewrite decEqSelfIsYes {x} in Refl
-            (MkHeapFamily (Singleton h)) => ?p0_2
-            (MkHeapFamily (Prick h s h≤s)) => ?p0_3
-            (MkHeapFamily (Balanced h h≤l h≤r left right)) => ?p0_4
-            (MkHeapFamily (Imbalanced h h≤l h≤r left right)) => ?p0_5
+          let
+            MkHeapFamily xs = xs
+          in
+            ConsAddsOne x xs
       in rewrite l0 in Refl
+
+    ConsKeepsRest {xs} x'≠x =
+      let
+        0 l0 : (x' .#. xs =  x' .#. (x::xs)) =
+          let
+            MkHeapFamily xs = xs
+          in
+            ConsKeepsRest {x} {x'} {xs} x'≠x
+      in rewrite l0 in Refl
+
+    Head (MkHeapFamily {n} x∷xs)  x∷xs≠【】 =
+      let 
+        0 prff : (m: Nat ** S m = n) = case n of
+          0 => void $ x∷xs≠【】$ case x∷xs of
+            [] => Refl
+          (S m) => (m ** Refl)
+        x∷xs: Heap (S prff.fst) _ = rewrite prff.snd in x∷xs
+        Element x _ = Data.Heap.Head x∷xs 
+      in x
+
+    Tail (MkHeapFamily [])  x∷xs≠【】 = void $ x∷xs≠【】 Refl
+    Tail (MkHeapFamily (Singleton h))  x∷xs≠【】 = []
+    Tail (MkHeapFamily (Prick h s h≤s))  x∷xs≠【】 = MkHeapFamily (Singleton s)
+    Tail (MkHeapFamily hp@(Balanced h h≤l h≤r left right))  x∷xs≠【】 = case Data.Heap.Tail hp of
+      ((_ ** (Element xs _))) => MkHeapFamily xs
+    Tail (MkHeapFamily hp@(Imbalanced h h≤l h≤r left right))  x∷xs≠【】 = case Data.Heap.Tail hp of
+      ((_ ** (Element xs _))) => MkHeapFamily xs
+
+    HeadTail (MkHeapFamily {n = 0} [])  x∷xs≠【】 = void $ x∷xs≠【】 Refl
+    HeadTail (MkHeapFamily {n = 1} (Singleton h))  x∷xs≠【】 = Refl
+    HeadTail (MkHeapFamily {n = 2} (Prick h s h≤s))  x∷xs≠【】 with (decEq h s)
+      -- h≤h is not necessarily the result of reflexive
+      HeadTail (MkHeapFamily {n = 2} (Prick h h h≤h))  x∷xs≠【】 | (Yes Refl) = ?hjkgahj_2_rhs2_0
+      HeadTail (MkHeapFamily {n = 2} (Prick h s h≤s))  x∷xs≠【】 | (No contra) = ?hjkgahj_2_rhs2_1
+    HeadTail (MkHeapFamily {n = (1 + ((1 + m) + (1 + m)))} (Balanced h h≤l h≤r left right))  x∷xs≠【】 = ?hjkgahj_3
+    HeadTail (MkHeapFamily {n = (1 + ((2 + m) + (1 + m)))} (Imbalanced h h≤l h≤r left right))  x∷xs≠【】 = ?hjkgahj_4
+
+    -- HeadTail x∷xs@(MkHeapFamily {n} x∷xs')  x∷xs≠【】 =
       -- let
-      --   0 l0: ((1 + x .#. xs) = x .#. (x :: xs)) = ?p0
-      -- in rewrite l0 in Refl
+      --   0 prff : (m: Nat ** S m = n) = case n of
+      --     0 => void $ x∷xs≠【】$ case x∷xs' of
+      --       [] => Refl
+      --     (S m) => (m ** Refl)
+      --   x∷xs'': Heap (S prff.fst) _ = rewrite prff.snd in x∷xs'
+      --   0 x∷xs≠【】': (Not (MkHeapFamily x∷xs' = Nil)) = \arg => x∷xs≠【】 ?sads
+      --   0 l0: ((let Element x _ = Head x∷xs' in x) :: Tail (MkHeapFamily x∷xs') x∷xs≠【】 = MkHeapFamily x∷xs') = ?sda
+      -- in
+      --   rewrite l0 in Refl
 
-    ConsKeepsRest x'≠x = ?p1
-      -- let
-      --   0 l0 : (x' .#. xs =  x' .#. (x::xs)) = ?p1
-      -- in rewrite l0 in Refl
+    (MkHeapFamily xs) ++ (MkHeapFamily ys) = MkHeapFamily (xs ++ ys)
 
-    Head x∷xs  x∷xs≠【】 = ?r0
-    Tail x∷xs  x∷xs≠【】 = ?r1
-    HeadTail x∷xs  x∷xs≠【】 = ?r2
+    ConcAddsCounts {xs = (MkHeapFamily xs)} {ys = (MkHeapFamily ys)} =
+      let
+        0 l0 : (cnt x (xs ++ ys) = plus (cnt x xs) (cnt x ys)) = case xs of
+          [] => Refl
+          (Singleton h) => case ys of
+            [] => sym $ plusZeroRightNeutral _
+            (Singleton h') =>  ?help7_9
+            (Prick h' s h'≤s) => ?help7_10
+            (Balanced h' h'≤l h'≤r left right) => ?help7_11
+            (Imbalanced h' h'≤l h'≤r left right) => ?help7_12
+          (Prick h s h≤s) => ?help7_5
+          (Balanced h h≤l h≤r left right) => ?help7_6
+          (Imbalanced h h≤l h≤r left right) => ?help7_7
+      in rewrite l0 in Refl
 
-    xs ++ ys = ?help6
+    ⋕⎨【】⎬≐0 = Refl
 
-    ConcAddsCounts = ?help7
+    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {xs = (MkHeapFamily xs)} =
+      let
+        0 l0 : (length (x :: xs) = S (length xs)) = case xs of
+          [] => Refl
+          (Singleton h) => Refl
+          (Prick h s h≤s) => Refl
+          (Balanced h h≤l h≤r left right) => Refl
+          (Imbalanced h h≤l h≤r left right) => cong S ?ads_4
+      in rewrite l0 in Refl
 
-    ⋕⎨【】⎬≐0 = ?help9
-
-    ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ = ?help10
-
-    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】{xs} the⋕⎨x∷xs⎬≐0 = ?help11
+    ∀xs‥⋕⎨xs⎬≐0⇒xs≐【】 {xs = (MkHeapFamily xs)} the⋕⎨x∷xs⎬≐0 = 
+      let
+        0 l0 : (MkHeapFamily xs = MkHeapFamily []) = case xs of
+          [] => Refl
+          (Singleton h) => void $ SIsNotZ the⋕⎨x∷xs⎬≐0
+          (Prick h s h≤s) => void $ SIsNotZ the⋕⎨x∷xs⎬≐0
+          (Balanced h h≤l h≤r left right) => void $ SIsNotZ the⋕⎨x∷xs⎬≐0
+          (Imbalanced h h≤l h≤r left right) => void $ SIsNotZ the⋕⎨x∷xs⎬≐0
+      in rewrite l0 in Refl
     
 
 --     x .#. (MkHeapFamily xs) = cnt x xs

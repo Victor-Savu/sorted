@@ -30,6 +30,7 @@ connexRelIsRight x≠y y≤x with (connex {rel} x≠y)
   connexRelIsRight x≠y y≤x | (Left x≤y) = void $ x≠y (antisymmetric {rel} x≤y y≤x)
   connexRelIsRight x≠y y≤x | (Right y≤'x) = (y≤'x ** Refl)
 
+export
 connexIsEither : Connex a rel => Antisymmetric a rel => {x, y : a} -> (x≠y: Not (x = y)) -> Either (x≤'y: rel x y ** connex x≠y = Left x≤'y) (y≤'x: rel y x ** connex x≠y = Right y≤'x)
 connexIsEither x≠y with (connex {rel} x≠y)
   connexIsEither x≠y | (Left x≤y) = Left (x≤y ** Refl)
@@ -215,6 +216,7 @@ public export
       (Max' {rel} x h :: right)
     )
 
+public export
 Head: DecEq a => LinearOrder a rel => Heap {a} {rel} (S n) h -> Subset a (\x => x=h)
 Head (Singleton h) = Element h Refl
 Head (Prick h s h≤s) = Element h Refl
@@ -338,6 +340,7 @@ public export
             (Max' {rel} h h' :: right ++ right')
           )
 
+public export
 Tail: DecEq a => LinearOrder a rel => Heap {a} {rel} (S (S n)) h -> (h': a ** Subset (Heap {a} {rel} (S n) h') (\_ => rel h h'))
 Tail (Prick h s h≤s) = (s ** Element (Singleton s) h≤s)
 Tail (Balanced h h≤l h≤r left right) =
