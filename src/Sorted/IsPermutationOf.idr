@@ -11,15 +11,20 @@ import public Sorted.Container
 %default total
 
 
-infixr 4 ~@~
+export infixr 4 ~@~
 
 %hide Prelude.(::)
+%hide Prelude.Stream.(::)
 %hide Prelude.Nil
 
 namespace IsPermutationOf
   public export
   data IsPermutationOf: Container a c => Rel c where
-    Ipo : ((e :a) -> ((e .#. original) @{ct} = (e .#. permutation) @{ct})) -> IsPermutationOf @{ct} original permutation
+    Ipo : (0 occ: (0 e :a) -> ((e .#. original) @{ct} = (e .#. permutation) @{ct})) -> IsPermutationOf @{ct} original permutation
+
+export
+0 (.counter): IsPermutationOf @{ct} {c} original permutation -> (0 e :a) -> ((e .#. original) @{ct} = (e .#. permutation) @{ct})
+(.counter) (Ipo occ) = occ
 
 public export
 (~@~) : Container a c => Rel c
@@ -27,103 +32,249 @@ original ~@~ permutation = IsPermutationOf original permutation
 
 export
 [uninhabitedIsPermutationOfConsNil] {0 x: a} -> {0 xs: c} -> Container a c => Uninhabited (x::xs ~@~ []) where
-    uninhabited (Ipo occ) = void $ uninhabited ((ConsAddsOne \=> occ {e=x}) \=> NilIsEmpty)
+    uninhabited (Ipo occ) = void $ SIsNotZ (ConsAddsOne \=> occ x \=> ∀x‥x⋕【】≐0)
 
 export
 [uninhabitedIsPermutationOfNilCons] {0 x: a} -> {0 xs: c} -> Container a c => Uninhabited ([] ~@~ x::xs) where
     uninhabited (Ipo occ) = uninhabited @{uninhabitedIsPermutationOfConsNil {a} {c}} (Ipo $ \e => sym $ occ e)
 
-export
+public export
 [reflexiveIsPermutationOf] Container a c => Reflexive c (~@~) where
     reflexive = Ipo (\_ => Refl)
 
 export
-[transitiveIsPermutationOf] Container a c => Transitive c (~@~) where
-    transitive (Ipo occ) (Ipo occ') = Ipo (\e => (occ e) \=> (occ' e))
+[transitiveIsPermutationOf]
+Container a c => Transitive c (~@~) where
+    transitive (Ipo occ) (Ipo occ') = Ipo occ'' where
+      occ'': (0 e : a) -> e .#. x = e .#. z
+      occ'' e = rewrite (occ e) \=> (occ' e) in Refl
 
 export
-[symmetricIsPermutationOf] Container a c => Symmetric c (~@~) where
+[symmetricIsPermutationOf]
+Container a c => Symmetric c (~@~) where
   symmetric (Ipo occ) = Ipo (\eInY => sym $ occ eInY)
 
 export
-0 PermutationOfCons : {x: a} -> {xs, ys: c} -> DecEq a => Container a c => x::xs ~@~ x::ys -> xs ~@~ ys
-PermutationOfCons (Ipo occ) = Ipo occ' where
-    occ' : (e : a) -> e .#. xs = e .#. ys
-    occ' e with (decEq e x)
-      occ' _ | (Yes Refl) = injective $ (ConsAddsOne \=> occ x) \=> (sym $ ConsAddsOne)
-      occ' e | (No eNEqX) = (ConsKeepsRest eNEqX \=> occ e) \=> (sym $ ConsKeepsRest eNEqX)
+(::) : Container a c => (0 x: a) -> (0 _: (xs ~@~ ys) {c}) -> x::xs ~@~ x::ys
+x :: (Ipo occ) = Ipo occ' where
+  occ' : (0 e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
+  occ' e =
+    let
+      0 ans = case decEq e x of
+        (Yes Refl) => sym ConsAddsOne \=> cong S (occ x) \=> ConsAddsOne
+        (No e≠x) =>  sym (ConsKeepsRest e≠x) \=> occ e \=> ConsKeepsRest e≠x
+    in
+      rewrite ans in Refl
 
 export
-0 AdditionOfPermutationsCommutes : {xs, ys, p: c} -> Container a c => p ~@~ (xs++ys) -> DecEq a => p ~@~ (ys++xs)
+tail : {x: a} -> {xs, ys: c} -> Container a c => x::xs ~@~ x::ys -> xs ~@~ ys
+tail (Ipo occ) = Ipo occ' where
+    occ' : (0 e : a) -> e .#. xs = e .#. ys
+    occ' e =
+      let
+        0 ans = case decEq e x of
+          Yes Refl => injective $ (ConsAddsOne \=> occ x) \=> sym ConsAddsOne
+          No e≠x => (ConsKeepsRest e≠x \=> occ e) \=> (sym $ ConsKeepsRest e≠x)
+      in rewrite ans in Refl
+
+export
+AdditionOfPermutationsCommutes : {xs, ys, p: c} -> Container a c => p ~@~ (xs++ys) -> p ~@~ (ys++xs)
 AdditionOfPermutationsCommutes (Ipo occ) = Ipo occ' where
-    occ' : (e : a) -> e .#. p = e .#. (ys ++ xs)
-    occ' e = ((occ e \=> (ConcMerges {c} xs ys e)) \=> (plusCommutative (e .#. xs) (e .#. ys))) \=> (sym $ ConcMerges {c} ys xs e)
+    occ' : (0 e : a) -> e .#. p = e .#. (ys ++ xs)
+    occ' e = rewrite occ e \=> ConcAddsCounts \=> plusCommutative _ _ \=> sym (ConcAddsCounts) in Refl
 
 export
-0 (++) : {x, y, z, t: c} -> Container a c => DecEq a => x ~@~ y -> z ~@~ t -> (x++z) ~@~ (y++t)
+(++) : {x, y, z, t: c} -> Container a c => x ~@~ y -> z ~@~ t -> (x++z) ~@~ (y++t)
 (++) (Ipo occ_x_y) (Ipo occ_z_t) = Ipo occ_xz_yt where
-    occ_xz_yt : (e : a) -> e .#. (x ++ z) = e .#. (y ++ t)
+    occ_xz_yt : (0 e : a) -> e .#. (x ++ z) = e .#. (y ++ t)
 
-export
-Nil : Container a c => IsPermutationOf {c} [] []
-Nil = Ipo (\_ => Refl)
+
+-- namespace Permutation
+--   export
+--   PNil : Container a c => IsPermutationOf {c} [] []
+--   PNil = Ipo (\_ => Refl)
+
+--   export
+--   (::) : {xs, ys: c} -> (x: a) -> Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
+--   (::) x (Ipo occ) = Ipo occ' where
+--       occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
+--       occ' e with (decEq e x)
+--         occ' _ | (Yes Refl) = (sym ConsAddsOne \=> cong S (occ x)) \=> ConsAddsOne
+--         occ' e | (No e≠x) = (sym (ConsKeepsRest e≠x) \=> occ e) \=> ConsKeepsRest e≠x
 
 export
 PermutationOfNilIsNil : Container a c => {xs: c} -> IsPermutationOf [] xs -> xs = []
-PermutationOfNilIsNil p with (Match xs)
-  PermutationOfNilIsNil p | (Left Refl) = Refl
-  PermutationOfNilIsNil (Ipo p) | (Right ((x', xs') # x'Xs'EqXs)) =
-    void $ SIsNotZ (ConsAddsOne {c} \=> ?choo \=> NilIsEmpty {c})
+PermutationOfNilIsNil (Ipo occ) = NilIsUnique (\x => sym (occ x) \=> ∀x‥x⋕【】≐0)
 
 export
-0 (::) : {xs, ys: c} -> (x: a) -> DecEq a => Container a c => xs ~@~ ys -> x::xs ~@~ x::ys
-(::) x (Ipo occ) = Ipo occ' where
-    occ': (e : a) -> e .#. (x :: xs) = e .#. (x :: ys)
-    occ' e with (decEq e x)
-      occ' _ | (Yes Refl) = (sym ConsAddsOne \=> cong S (occ x)) \=> ConsAddsOne
-      occ' e | (No eNEqX) = (sym (ConsKeepsRest eNEqX) \=> occ e) \=> ConsKeepsRest eNEqX
-
-export
-0 tail : {x: a} -> {xs, ys: c} -> Container a c => x::xs ~@~ x::ys -> DecEq a => xs ~@~ ys
-tail (Ipo occ) = Ipo occ' where
-    occ' : (e : a) -> e .#. xs = e .#. ys
-    occ' e with (decEq e x)
-      occ' _ | (Yes Refl) = injective $ (ConsAddsOne \=> occ x) \=> sym ConsAddsOne
-      occ' e | (No eNEqX) = (ConsKeepsRest eNEqX \=> occ e) \=> (sym $ ConsKeepsRest eNEqX)
-
-export
-pong : Container a c => {0 p: c -> c} -> (f: xs ~@~ ys -> p xs ~@~ p ys) ->  xs ~@~ ys -> p xs ~@~ p ys
-pong f g = f g
-
-export
-0 swapIsPermutation : {x,y: a} -> DecEq a => Container a c => (e: a) -> e .#. (Container.(::) {c} x (Container.(::) y Container.Nil)) = e .#. (Container.(::) {c} y (Container.(::) x Container.Nil))
+swapIsPermutation : {x,y: a} -> Container a c => (e: a) -> e .#. ([x, y] {c}) = e .#. ([y, x] {c})
 swapIsPermutation e with (decEq e x, decEq e y)
   swapIsPermutation e | ((Yes Refl), Yes Refl) = Refl
-  swapIsPermutation e | ((Yes Refl), No eNEqY) = sym ((cong S $ ConsKeepsRest eNEqY) \=> ConsAddsOne) \=> ConsAddsOne \=> (ConsKeepsRest eNEqY)
-  swapIsPermutation e | ((No eNEqX), Yes Refl) = sym (ConsKeepsRest eNEqX) \=> sym ConsAddsOne \=> (cong S (ConsKeepsRest eNEqX)) \=> ConsAddsOne
-  swapIsPermutation e | ((No eNEqX), No eNEqY) = sym (ConsKeepsRest eNEqY \=> ConsKeepsRest eNEqX) \=> ConsKeepsRest eNEqX \=> ConsKeepsRest eNEqY
+  swapIsPermutation e | ((Yes Refl), No e≠y) = sym ((cong S $ ConsKeepsRest e≠y) \=> ConsAddsOne) \=> ConsAddsOne \=> (ConsKeepsRest e≠y)
+  swapIsPermutation e | ((No e≠x), Yes Refl) = sym (ConsKeepsRest e≠x) \=> sym ConsAddsOne \=> (cong S (ConsKeepsRest e≠x)) \=> ConsAddsOne
+  swapIsPermutation e | ((No e≠x), No e≠y) = sym (ConsKeepsRest e≠y \=> ConsKeepsRest e≠x) \=> ConsKeepsRest e≠x \=> ConsKeepsRest e≠y
 
 export
-0 shiftPermutation : {0 y: a} -> {0 xs, ys, ys': c} -> DecEq a => Container a c => IsPermutationOf {c} {a} ys (y::ys') -> IsPermutationOf {c} {a} (xs++ys) (y::(xs++ys'))
-shiftPermutation x = (
-  replace {p = IsPermutationOf (xs ++ ys)}
-    ConcReduces
-    (AdditionOfPermutationsCommutes $ reflexive @{reflexiveIsPermutationOf} {x=xs} ++ x)
-      \=> y :: (AdditionOfPermutationsCommutes $ reflexive @{reflexiveIsPermutationOf} {x=ys' ++ xs})
-      ) @{transitiveIsPermutationOf}
+shiftPermutation : {0 y: a} -> {0 xs, ys, ys': c} -> Container a c => (0 _: IsPermutationOf {c} {a} ys (y::ys')) -> IsPermutationOf {c} {a} (xs++ys) (y::(xs++ys'))
+shiftPermutation (Ipo occ) = Ipo occ' where
+  occ' : (0 e : a) -> e .#. (xs ++ ys) = e .#. (y :: (xs ++ ys'))
+  occ' e =
+    let
+      0 ans = case decEq e y of
+        Yes Refl => ConcAddsCounts \=> cong (y .#. xs +) (occ y \=> sym (ConsAddsOne {c})) \=> sym (plusSuccRightSucc _ _) \=> cong S (sym ConcAddsCounts)  \=> ConsAddsOne {c}
+        No e≠y => ConcAddsCounts \=> cong (e .#. xs +) (occ e \=> sym (ConsKeepsRest e≠y)) \=> sym ConcAddsCounts \=> ConsKeepsRest e≠y
+    in
+      rewrite ans in Refl
+
 
 export
-0 PermutationHasSameSize : DecEq a => Container a c => {xs, ys: c} -> xs ~@~ ys -> size @{ContainerSized} xs = size @{ContainerSized} ys
-PermutationHasSameSize ipo with (sizeAccessible @{ContainerSized} xs)
-  PermutationHasSameSize ipo | acc with (Match xs)
-    PermutationHasSameSize ipo | acc | (Left Refl) with (PermutationOfNilIsNil ipo)
-      PermutationHasSameSize ipo | acc | (Left Refl) | Refl = Refl
-    PermutationHasSameSize ipo | Access acc | (Right ((h, t) # Refl)) with (findFirst h ys)
-      PermutationHasSameSize (Ipo f) | Access acc | (Right ((h, t) # Refl)) | Left l = void $ SIsNotZ (ConsAddsOne \=> f h \=> l)
-      PermutationHasSameSize ipo | Access acc | (Right ((h, t) # Refl)) | Right ((l, r) # (h∉l, Refl)) =
-          SizedCons \=>
-          cong S (PermutationHasSameSize (tail ((ipo \=> shiftPermutation (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf})) | acc _ $ eqLTE $ sym SizedCons) \=>
-          cong S (SizedConc l r) \=>
-          plusSuccRightSucc _ _ \=>
-          cong (size @{ContainerSized} l +) (sym SizedCons) \=>
-          sym (SizedConc l (h::r))
+shiftPermutationLeft : {x: a} -> {xs, xs', ys: c} -> Container a c => IsPermutationOf {c} {a} xs (x::xs')  -> IsPermutationOf {c} {a} (xs++ys) (x::(xs'++ys))
+shiftPermutationLeft ipo = symmetric @{symmetricIsPermutationOf} $ AdditionOfPermutationsCommutes $ symmetric @{symmetricIsPermutationOf} $ (shiftPermutation ipo \=> x :: AdditionOfPermutationsCommutes (reflexive @{reflexiveIsPermutationOf})) @{transitiveIsPermutationOf}
+
+-- RemoveEqInjective : Container a c => {xs, ys: c} -> IsPermutationOf xs ys -> {x: a} -> IsPermutationOf (let Element xs⧷⎨x⎬ xs⧷⎨x⎬_prf = Remove x xs in xs⧷⎨x⎬) (let Element ys⧷⎨x⎬ ys⧷⎨x⎬_prf = Remove x ys in ys⧷⎨x⎬)
+-- RemoveEqInjective xs≎ys {x} with (Remove x xs, Remove x ys)
+--   RemoveEqInjective xs≎ys {x = x} | (Element xs⧷⎨x⎬ xs⧷⎨x⎬_prf, Element ys⧷⎨x⎬ ys⧷⎨x⎬_prf) = Ipo occ where
+--     occ: (e : a) -> e .#. xs⧷⎨x⎬ = e .#. ys⧷⎨x⎬
+
+0 PermutationHasSameSize' : Container a c => {xs, ys: c} -> xs ~@~ ys -> size xs = size ys
+PermutationHasSameSize' xs≎ys with (sizeAccessible ys)
+  PermutationHasSameSize' xs≎ys | acc with (IsNil ys)
+    PermutationHasSameSize' xs≎ys | acc | (Yes Refl) with (PermutationOfNilIsNil (symmetric @{symmetricIsPermutationOf} xs≎ys))
+      PermutationHasSameSize' xs≎ys | acc | (Yes Refl) | Refl = Refl
+    PermutationHasSameSize' (Ipo xs≎ys) | Access acc | (No ys≠【】) =
+        let
+          Element xs⧷⎨y⎬ (y∉❪xs⧷⎨y⎬❫, e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫, size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫) = Remove (Head ys ys≠【】) xs
+          Element ys⧷⎨y⎬ (y∉❪ys⧷⎨y⎬❫, e→e≠y→e⋕ys⋕≐e❪ys⧷⎨y⎬❫, size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫) = Remove (Head ys ys≠【】) ys
+          xs⧷⎨y⎬≎ys⧷⎨y⎬ : xs⧷⎨y⎬ ~@~ ys⧷⎨y⎬ =
+            Ipo (\e => case decEq e (Head ys ys≠【】) of
+                          (Yes Refl) => y∉❪xs⧷⎨y⎬❫ \=> sym y∉❪ys⧷⎨y⎬❫
+                          (No e≠y) => sym (e→e≠y→e⋕xs⋕≐e❪xs⧷⎨y⎬❫ e e≠y) \=> xs≎ys e \=> e→e≠y→e⋕ys⋕≐e❪ys⧷⎨y⎬❫ e e≠y)
+          s0≤y⋕ys : LTE 1 ((Head ys ys≠【】) .#. ys) =
+            rewrite sym (cong ((Head ys ys≠【】) .#. ) (HeadTail ys ys≠【】)) in
+            rewrite sym (ConsAddsOne {x=Head ys ys≠【】} {xs=Tail ys ys≠【】}) in
+              LTESucc LTEZero
+          succ❪size❪ys⧷⎨y⎬❫≤y⋕ys∔size❪ys⧷⎨y⎬❫ = plusLteMonotoneRight (size ys⧷⎨y⎬) _ _ s0≤y⋕ys
+          succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫ =
+            rewrite cong (LTE (S (size ys⧷⎨y⎬))) (size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫ ) in
+              succ❪size❪ys⧷⎨y⎬❫≤y⋕ys∔size❪ys⧷⎨y⎬❫
+          size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ = (PermutationHasSameSize' xs⧷⎨y⎬≎ys⧷⎨y⎬ | acc _ succ❪size❪ys⧷⎨y⎬❫≤size❪ys⧷⎨y⎬❫) 
+        in
+          size❪xs❫≐❪y⋕xs❫∔size❪xs⧷⎨y⎬❫ \=> cong2 (+) (xs≎ys (Head ys ys≠【】)) size❪xs⧷⎨y⎬❫≐size❪ys⧷⎨y⎬❫ \=> sym size❪ys❫≐❪y⋕ys❫∔size❪ys⧷⎨y⎬❫
+
+export
+PermutationHasSameSize : Container a c => {0 xs, ys: c} -> (0 xs≎ys: xs ~@~ ys) -> size xs = size ys
+PermutationHasSameSize xs≎ys = rewrite PermutationHasSameSize' xs≎ys in Refl
+
+
+export
+ConcNilLeftNeutral : {0 xs: c} -> Container a c => ([] ++ xs) ~@~ xs
+ConcNilLeftNeutral {xs} = Ipo occ where
+  occ : (0 e : a) -> e .#. ([] ++ xs) = e .#. xs
+  occ e = 
+    let 
+      0 ans: (e .#. ([] ++ xs) = e .#. xs) = ConcAddsCounts \=> cong (+ e .#. xs) ∀x‥x⋕【】≐0
+    in
+      rewrite ans in Refl
+
+export
+ConcNilRightNeutral : {xs: c} -> Container a c => (xs ++ []) ~@~ xs
+ConcNilRightNeutral = Ipo occ where
+  occ : (0 e : a) -> e .#. (xs ++ []) = e .#. xs
+  occ e = 
+    let 
+      0 ans: (e .#. (xs ++ []) = e .#. xs) = ConcAddsCounts \=> cong (e .#. xs +) ∀x‥x⋕【】≐0 \=> plusZeroRightNeutral _
+    in
+      rewrite ans in Refl
+
+export
+x∷xs⧺ys≐x∷⎨xs⧺ys⎬: {x: a} -> {xs, ys: c} -> Container a c => ((x::xs) ++ ys) ~@~ (x :: (xs ++ ys))
+x∷xs⧺ys≐x∷⎨xs⧺ys⎬ = Ipo ?occ where
+  occ : (0 e : a) -> e .#. ((x :: xs) ++ ys) = e .#. (x :: (xs ++ ys))
+  occ e =
+    let
+      0 ans: (e .#. ((x::xs) ++ ys) = e .#. (x :: (xs ++ ys))) = ConcAddsCounts \=> case decEq e x of
+        Yes Refl => cong (+ (x .#. ys)) (sym (ConsAddsOne {c})) \=> cong S (sym (ConcAddsCounts {c})) \=> ConsAddsOne
+        No e≠x => cong (+ (e .#. ys)) (sym (ConsKeepsRest e≠x)) \=> sym (ConcAddsCounts {c}) \=> ConsKeepsRest e≠x
+    in
+      rewrite ans in Refl
+
+export
+0 ConcAddsSizes' : Container a c => {xs, ys: c} -> SizeAccessible xs -> size (xs ++ ys) = size xs + size ys
+ConcAddsSizes' (Access acc) = case (IsNil xs) of
+  (Yes Refl) =>
+      PermutationHasSameSize ConcNilLeftNeutral \=> cong (+ size ys) (sym ⋕⎨【】⎬≐0)
+  (No xs≠【】) => 
+    let
+      ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬: (size xs = S (size (Tail xs xs≠【】))) = cong size (sym $ HeadTail xs xs≠【】) \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+      ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬ = sym (cong (+ (size ys)) ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬)
+
+      ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ = ConcAddsSizes' (acc _ (rewrite ⋕⎨xs⎬≐⒈∔⋕⎨xs'⎬ in reflexive)) {xs=Tail xs xs≠【】} {ys}
+      ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ = PermutationHasSameSize (x∷xs⧺ys≐x∷⎨xs⧺ys⎬ {xs=Tail xs xs≠【】} {ys} {x=Head xs xs≠【】})
+    in
+      cong (\arg => size (arg ++ ys)) (sym $ HeadTail xs xs≠【】) \=> ⋕⎨x∷xs'⧺ys⎬≐⋕⎨x∷⎨xs'⧺ys⎬⎬ \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong S ⋕⎨xs'⧺ys⎬≐⋕⎨xs'⎬∔⋕⎨ys⎬ \=> ⒈∔⋕⎨xs'⎬∔⋕⎨ys⎬≐⋕⎨xs⎬∔⋕⎨ys⎬
+
+export
+ConcAddsSizes : Container a c => {0 xs, ys: c} -> size (xs ++ ys) = size xs + size ys
+ConcAddsSizes = rewrite ConcAddsSizes' {ys} (sizeAccessible xs) in Refl
+
+
+export
+OnlyNilConcsToNil : Container a c => (0 xs: c) -> (0 ys: c) -> (0 prf: xs ++ ys = []) -> (xs=[], ys=[])
+OnlyNilConcsToNil xs ys prf =
+  let
+    0 ans: (xs=[], ys=[]) = case IsNil xs of
+      (Yes Refl) =>
+        (
+          Refl,
+          PermutationOfNilIsNil (replace {p = \q => IsPermutationOf q ys} (prf) (ConcNilLeftNeutral {xs=ys}))
+        )
+      (No xs≠【】) => void $ SIsNotZ (cong (+ size ys) (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> (cong size $ HeadTail xs xs≠【】)) \=> sym ConcAddsSizes \=> cong size prf \=> ⋕⎨【】⎬≐0 {c})
+  in
+    ((rewrite fst ans in Refl), (rewrite snd ans in Refl))
+
+0 SingletonIsPermutationOfConsOfNilAndItsPermutation : Container a c => (x: a) -> (xs: c) -> (ys: c) -> (xs ++ ys) ~@~ [x] -> Either (xs=[], ys ~@~ [x]) (ys=[], xs ~@~ [x])
+SingletonIsPermutationOfConsOfNilAndItsPermutation x xs ys xs⧺ys≎【x】 = case IsNil xs of
+  (Yes Refl) => Left (Refl, (symmetric @{symmetricIsPermutationOf} ConcNilLeftNeutral \=> xs⧺ys≎【x】) @{transitiveIsPermutationOf})
+  (No xs≠【】) => case IsNil ys of
+    (Yes Refl) => Right (Refl, (symmetric @{symmetricIsPermutationOf} ConcNilRightNeutral \=> xs⧺ys≎【x】) @{transitiveIsPermutationOf})
+    (No ys≠【】) =>
+      void $ SIsNotZ (
+          plusSuccRightSucc _ _ \=> injective (
+              cong2 (+) (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬
+              \=> cong size (HeadTail xs xs≠【】)) (sym ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ \=> cong size (HeadTail ys ys≠【】))
+              \=> sym ConcAddsSizes
+              \=> PermutationHasSameSize xs⧺ys≎【x】
+              \=> ∀x‥∀xs‥⋕⎨x∷xs⎬≐S⋕⎨xs⎬ {c}
+            ) \=> ⋕⎨【】⎬≐0
+        )
+
+
+-- Small permutation proofs
+export
+0 JustTheHead: Container a c => (0 xs: c) -> (0 xs≠【】: Not (xs = [])) -> (0 _: Tail xs xs≠【】 = []) -> IsPermutationOf xs [Head xs xs≠【】]
+JustTheHead xs xs≠【】 tail_xs≐【】 = (reflexiveFromEq @{reflexiveIsPermutationOf} (sym $ HeadTail xs xs≠【】) \=> Head xs xs≠【】 :: reflexiveFromEq @{reflexiveIsPermutationOf} tail_xs≐【】) @{transitiveIsPermutationOf}
+
+export
+0 Conc12 : Container a c => {x, y, z: a} -> IsPermutationOf {c} ([x] ++ [y, z]) [x, y, z]
+Conc12 = (
+    AdditionOfPermutationsCommutes (reflexive @{reflexiveIsPermutationOf})
+    \=> (shiftPermutation (reflexive @{reflexiveIsPermutationOf}) \=> x :: ConcNilRightNeutral) @{transitiveIsPermutationOf}
+  ) @{transitiveIsPermutationOf}
+
+export
+0 Conc21 : Container a c => {x, y, z: a} -> IsPermutationOf {c} ([x, z] ++ [y]) [x, y, z]
+Conc21 {x, y, z}= 
+  let
+    l1: (([x, z] ++ [y]) ~@~ ([y] ++ [x, z])) = AdditionOfPermutationsCommutes {c} (reflexive @{reflexiveIsPermutationOf {c}})
+    l2: (([y] ++ [x, z]) ~@~ x :: ([y] ++ [z])) = shiftPermutation {c} (reflexive @{reflexiveIsPermutationOf {c}})
+    l3: (([y] ++ [z]) ~@~ ([z] ++ [y])) = AdditionOfPermutationsCommutes {c} (reflexive @{reflexiveIsPermutationOf {c}})
+    l4: (([z] ++ [y]) ~@~ (y :: ([z] ++ []))) = shiftPermutation {c} (reflexive @{reflexiveIsPermutationOf {c}})
+    l5: (y::([z] ++ []) ~@~ [y, z]) = y :: ConcNilRightNeutral {c}
+    -- l6 = (AdditionOfPermutationsCommutes {c} (reflexive @{reflexiveIsPermutationOf {c}}) \=> shiftPermutation {c} (reflexive @{reflexiveIsPermutationOf {c}}) \=> (y :: ConcNilRightNeutral {c}))
+  in
+    (AdditionOfPermutationsCommutes {c} (reflexive @{reflexiveIsPermutationOf {c}})
+     \=> (l2 \=> x :: (l3 \=> (l4 \=> l5) @{transitiveIsPermutationOf}) @{transitiveIsPermutationOf}) @{transitiveIsPermutationOf}) @{transitiveIsPermutationOf}
+
+export
+0 ConsPermutesConc: Container a c => (0 x: a) -> (0 xs: c) -> IsPermutationOf {a} {c} (x :: xs) ([x] ++ xs)
+ConsPermutesConc x xs = symmetric @{symmetricIsPermutationOf} ((shiftPermutationLeft (reflexive @{reflexiveIsPermutationOf {c}}) \=> x :: ConcNilLeftNeutral) @{transitiveIsPermutationOf})

@@ -4,7 +4,6 @@ import Sorted.MergeSort
 import Sorted.InsertionSort
 import Sorted.Container.List
 import Data.Nat
-import Sorted.Prop
 
 main : IO ()
 main = do

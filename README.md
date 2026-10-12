@@ -12,3 +12,17 @@ For a sorting algorithm to be correct, it must take in a list and a relation tha
 - [ ] Heap Sort
 - [ ] Bucket Sort
 - [ ] Quick Sort
+
+## Dependency Graph
+
+```
+Container --------------------.--> IsSortingOf
+   |                         /
+    `-> IsPermutationOf ----'
+   |
+   |`-> Sorted
+   |
+   |`-> Sequence 
+   |
+   |`-> Relates [might not neeed it]
+```
